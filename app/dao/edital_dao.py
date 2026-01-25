@@ -6,11 +6,11 @@ class EditalDAO:
         try:
             cursor = conn.cursor()
             
-            # Verifica duplicidade pelo link
+            # para verificação de duplicidade via link
             sql_check = "SELECT id FROM edital WHERE link = %s"
             cursor.execute(sql_check, (edital['link'],))
             if cursor.fetchone():
-                return False # Já existe
+                return False 
 
             sql = """
                 INSERT INTO edital (titulo, link, resumo, data_publicacao) 

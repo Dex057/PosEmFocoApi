@@ -17,6 +17,7 @@ O sistema permite que o usuário cadastre palavras-chave (ex: "Enfermagem", "Com
 - [API Endpoints](#-api-endpoints)
 - [Arquitetura](#-arquitetura)
 - [Troubleshooting](#-troubleshooting)
+- [Contribuição](#-contribuição)
 
 ## 🎯 Visão Geral
 
@@ -59,28 +60,34 @@ PósEmFoco é uma solução inteligente que automatiza o monitoramento de editai
 ```
 PosEmFoco/
 ├── app/
-│   ├── dao/                    # Data Access Objects
-│   │   ├── usuario_dao.py      # Operações com usuários
-│   │   ├── interesse_dao.py    # Operações com interesses
-│   │   └── edital_dao.py       # Operações com editais
+│   ├── __init__.py
+│   ├── dao/                    # Data Access Objects - Acesso aos dados
+│   │   ├── usuario_dao.py      # CRUD de usuários
+│   │   ├── interesse_dao.py    # Gerenciamento de palavras-chave
+│   │   ├── edital_dao.py       # Gerenciamento de editais
+│   │   └── __init__.py
 │   ├── models/                 # Modelos de dados
 │   │   ├── usuario.py          # Classe Usuario
-│   │   └── edital.py           # Classe Edital
+│   │   ├── edital.py           # Classe Edital
+│   │   └── __init__.py
 │   ├── services/               # Lógica de negócio
-│   │   ├── scraper.py          # Web scraper dos editais
-│   │   ├── email_service.py    # Envio de notificações
-│   │   └── notificador.py      # Lógica de notificações
+│   │   ├── scraper.py          # Web scraper dos editais (Selenium)
+│   │   ├── email_service.py    # Envio de notificações por e-mail
+│   │   ├── notificador.py      # Lógica de correspondência edital-interesse
+│   │   └── __init__.py
 │   └── utils/
-│       └── db.py               # Configuração do banco de dados
+│       ├── db.py               # Conexão com PostgreSQL
+│       └── __init__.py
 ├── frontend/
-│   ├── login.html              # Página de login
-│   ├── cadastro.html           # Página de cadastro
-│   └── style.css               # Estilos CSS
-├── criar_tabelas.py            # Script para criar tabelas no BD
-├── reset_banco.py              # Script para limpar BD
+│   ├── login.html              # Interface de login
+│   ├── cadastro.html           # Interface de cadastro
+│   └── style.css               # Estilos compartilhados
+├── criar_tabelas.py            # Script para inicializar o banco
+├── reset_banco.py              # Script para limpar dados (apenas dev)
 ├── server.py                   # Servidor FastAPI principal
 ├── requirements.txt            # Dependências do projeto
-├── .env                        # Variáveis de ambiente (não versionado)
+├── .env                        # Variáveis de ambiente (NÃO versionado)
+├── .gitignore                  # Configurações do Git
 └── README.md                   # Este arquivo
 ```
 
@@ -229,55 +236,7 @@ Abra seu navegador e acesse:
 
 ## 📡 API Endpoints
 
-### Autenticação e Usuários
-
-#### `POST /cadastro`
-Registra um novo usuário
-
-**Request:**
-```json
-{
-  "nome": "João Silva",
-  "email": "joao@example.com",
-  "senha": "senha_segura_123",
-  "nivel_graduacao": "Mestrado",
-  "interesses": ["Computação", "Engenharia"]
-}
-```
-
-**Response:**
-```json
-{
-  "mensagem": "Usuário cadastrado com sucesso!",
-  "id": 1
-}
-```
-
-#### `POST /login`
-Realiza o login e inicia o monitoramento
-
-**Request:**
-```json
-{
-  "email": "joao@example.com",
-  "senha": "senha_segura_123"
-}
-```
-
-**Response:**
-```json
-{
-  "mensagem": "Login realizado com sucesso",
-  "usuario": {
-    "id": 1,
-    "nome": "João Silva",
-    "email": "joao@example.com"
-  }
-}
-```
-
-### Editais
-
+### Status
 #### `GET /`
 Verifica se a API está rodando
 
@@ -288,78 +247,248 @@ Verifica se a API está rodando
 }
 ```
 
+### Autenticação e Cadastro
+
+#### `POST /cadastro`
+Registra um novo usuário e suas palavras-chave de interesse
+
+**Request:**
+```json
+{
+  "nome": "João Silva",
+  "email": "joao@example.com",
+  "senha": "senha_segura_123",
+  "nivel_graduacao": "Mestrado",
+  "interesses": ["Computação", "Inteligência Artificial", "Python"]
+}
+```
+
+**Response (Sucesso):**
+```json
+{
+  "mensagem": "Usuário cadastrado com sucesso!",
+  "id": 1
+}
+```
+
+**Response (Erro - Email duplicado):**
+```json
+{
+  "detail": "E-mail já cadastrado."
+}
+```
+
+#### `POST /login`
+Realiza login e inicia automaticamente a busca por novos editais
+
+**Request:**
+```json
+{
+  "email": "joao@example.com",
+  "senha": "senha_segura_123"
+}
+```
+
+**Response (Sucesso):**
+```json
+{
+  "mensagem": "Login realizado com sucesso. Buscando novos editais...",
+  "usuario": {
+    "id": 1,
+    "nome": "João Silva",
+    "email": "joao@example.com",
+    "nivel_graduacao": "Mestrado"
+  }
+}
+```
+
+**Response (Erro - Credenciais inválidas):**
+```json
+{
+  "detail": "Email ou senha incorretos"
+}
+```
+
+### Editais
+
+#### `GET /editais`
+Lista todos os editais já encontrados
+
+**Response:**
+```json
+[
+  {
+    "id": 1,
+    "titulo": "Edital de Mestrado em Computação",
+    "link": "https://ufpa.edu.br/edital-1",
+    "resumo": "Descrição do edital...",
+    "data_publicacao": "2026-01-25",
+    "data_criacao": "2026-01-25T10:30:00"
+  }
+]
+```
+
+#### `POST /editais`
+Registra um novo edital no banco (normalmente usado pelo scraper)
+
+**Request:**
+```json
+{
+  "titulo": "Edital de Doutorado em Engenharia",
+  "link": "https://ufpa.edu.br/edital-novo",
+  "resumo": "Descrição do novo edital",
+  "data_publicacao": "2026-01-25"
+}
+```
+
+**Response (Sucesso):**
+```json
+{
+  "mensagem": "Edital salvo com sucesso"
+}
+```
+
+**Response (Edital duplicado):**
+```json
+{
+  "mensagem": "Edital não salvo (provavelmente duplicado)"
+}
+```
+
 ## 🏗️ Arquitetura
 
-### Camadas da Aplicação
+A aplicação segue o padrão de **camadas** (Layered Architecture) para maior organização e manutenibilidade:
 
 ```
-┌─────────────────────────────────────┐
-│        Frontend (HTML/CSS/JS)       │
-├─────────────────────────────────────┤
-│        FastAPI Server               │
-│  (server.py - Endpoints REST)       │
-├─────────────────────────────────────┤
-│        Services Layer               │
-│  - Scraper (Selenium)               │
-│  - Email Service (SMTP)             │
-│  - Notificador                      │
-├─────────────────────────────────────┤
-│        DAO Layer (Data Access)      │
-│  - UsuarioDAO                       │
-│  - InteresseDAO                     │
-│  - EditalDAO                        │
-├─────────────────────────────────────┤
-│        PostgreSQL Database          │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│         Frontend (HTML5 + CSS3 + JS)                │
+│    ├─ login.html (autenticação de usuários)        │
+│    └─ cadastro.html (registro e interesses)        │
+└────────────────────┬────────────────────────────────┘
+                     │ HTTP Requests
+┌────────────────────▼────────────────────────────────┐
+│       FastAPI Server (server.py)                    │
+│    - Gerencia endpoints REST                        │
+│    - Validação com Pydantic                         │
+│    - Hashing de senhas com bcrypt                   │
+│    - CORS habilitado para requisições externas      │
+└────────────────────┬────────────────────────────────┘
+                     │
+┌────────────────────▼────────────────────────────────┐
+│      Services Layer (app/services/)                 │
+│    ├─ scraper.py (extrai dados via Selenium)       │
+│    ├─ email_service.py (envia notificações SMTP)   │
+│    └─ notificador.py (lógica de matching)          │
+└────────────────────┬────────────────────────────────┘
+                     │
+┌────────────────────▼────────────────────────────────┐
+│       DAO Layer (app/dao/)                          │
+│    ├─ usuario_dao.py (CRUD usuários)               │
+│    ├─ interesse_dao.py (gerencia interesses)       │
+│    └─ edital_dao.py (gerencia editais)             │
+└────────────────────┬────────────────────────────────┘
+                     │ SQL Queries
+┌────────────────────▼────────────────────────────────┐
+│       PostgreSQL Database                           │
+│    ├─ usuario (armazena usuários registrados)      │
+│    ├─ interesse (palavras-chave por usuário)       │
+│    └─ edital (editais encontrados)                 │
+└─────────────────────────────────────────────────────┘
 ```
 
-### Fluxo de Execução do Scraper
+### Fluxo de Execução
 
-1. **Inicialização:** Usuário faz login
-2. **Busca de Interesses:** Consulta banco de dados por palavras-chave e e-mails dos usuários
-3. **Web Scraping:** Acessa site da UFPA com Selenium
-4. **Extração de Dados:** Coleta título, link, data e resumo dos editais
-5. **Verificação de Duplicatas:** Checa se edital já existe no banco
-6. **Armazenamento:** Salva novo edital no BD
-7. **Notificação:** Envia e-mail aos usuários interessados
+1. **Cadastro:**
+   - Usuário preenche formulário → POST /cadastro
+   - Servidor valida dados e criptografa senha
+   - Interesses são salvos na tabela `interesse`
+
+2. **Login:**
+   - Usuário autentica → POST /login
+   - Credenciais são validadas contra o banco
+   - Uma tarefa de background é iniciada (executar_scraper)
+
+3. **Scraping (Automático após login):**
+   - Selenium acessa site da UFPA
+   - Extrai informações dos editais
+   - Verifica duplicatas no banco
+   - Salva novos editais
+
+4. **Notificação:**
+   - Sistema busca interesses de cada usuário
+   - Compara com editais encontrados
+   - Envia e-mails para usuários correspondentes
+   - Registra histórico no banco
 
 ## 🛠️ Comandos Úteis
 
 ### Gerenciar Banco de Dados
 
 ```bash
-# Criar tabelas
+# Criar as tabelas automaticamente
 python criar_tabelas.py
 
-# Limpar banco de dados (CUIDADO!)
+# Limpar todos os dados (CUIDADO - apenas desenvolvimento)
 python reset_banco.py
 
 # Backup do banco
-pg_dump -U posemfoco_user posemfoco > backup.sql
+pg_dump -U posemfoco_user posemfoco > backup_$(date +%Y%m%d).sql
 
 # Restaurar backup
-psql -U posemfoco_user posemfoco < backup.sql
+psql -U posemfoco_user posemfoco < backup_20260125.sql
 ```
 
-### Ativar Modo Debug
-
-Edite `server.py` para adicionar logs:
-```python
-import logging
-logging.basicConfig(level=logging.DEBUG)
-```
-
-### Testar Envio de E-mail
+### Executar a Aplicação
 
 ```bash
-python -c "from app.services.email_service import enviar_notificacao; enviar_notificacao('seu_email@gmail.com', 'Teste', 'https://example.com', 'Python')"
+# Iniciar o servidor FastAPI (modo desenvolvimento com reload)
+uvicorn server:app --reload --host 0.0.0.0 --port 8000
+
+# Iniciar em modo produção (sem reload)
+uvicorn server:app --host 0.0.0.0 --port 8000 --workers 4
+```
+
+### Testar Funcionalidades
+
+```bash
+# Verificar documentação da API (Swagger UI)
+# Acesse: http://localhost:8000/docs
+
+# Testar endpoint de status
+curl http://localhost:8000/
+
+# Testar cadastro
+curl -X POST http://localhost:8000/cadastro \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nome": "Teste",
+    "email": "teste@example.com",
+    "senha": "senha123",
+    "nivel_graduacao": "Mestrado",
+    "interesses": ["Python", "IA"]
+  }'
+
+# Listar editais
+curl http://localhost:8000/editais
+```
+
+### Debugging
+
+```bash
+# Ver logs detalhados do servidor
+uvicorn server:app --reload --log-level debug
+
+# Ativar modo debug em Python scripts
+python -c "import logging; logging.basicConfig(level=logging.DEBUG); exec(open('criar_tabelas.py').read())"
 ```
 
 ## 🐛 Troubleshooting
 
 ### Erro: "ModuleNotFoundError: No module named 'app'"
 
-**Solução:** Certifique-se de estar na pasta raiz do projeto ao executar:
+**Problema:** Python não encontra o módulo da aplicação.
+
+**Solução:** Certifique-se de estar na pasta raiz do projeto:
 ```bash
 cd /caminho/para/PosEmFoco
 python criar_tabelas.py
@@ -367,44 +496,119 @@ python criar_tabelas.py
 
 ### Erro: "psycopg2.OperationalError: could not connect to server"
 
-**Solução:** Verifique se PostgreSQL está rodando:
+**Problema:** Não consegue conectar ao PostgreSQL.
+
+**Solução:** Verifique se PostgreSQL está rodando e se as credenciais estão corretas:
 ```bash
 # Linux
 sudo systemctl start postgresql
 
-# Mac (via Homebrew)
+# Mac (Homebrew)
 brew services start postgresql
+
+# Verificar se está rodando
+sudo systemctl status postgresql
 ```
 
-### Erro: "ConnectionRefusedError" ao enviar e-mail
+Verifique as variáveis no `.env`:
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=posemfoco_user
+DB_PASSWORD=sua_senha_segura
+DB_NAME=posemfoco
+```
 
-**Solução:** Verifique credenciais do Gmail no `.env`:
-- Use [Senhas de Aplicativo](https://myaccount.google.com/apppasswords)
-- Ative "Acesso de apps menos seguros" (alternativa)
+### Erro: "SMTPAuthenticationError" ao enviar e-mail
 
-### Selenium não encontra Chrome
+**Problema:** Falha na autenticação com Gmail.
 
-**Solução:** 
+**Solução:**
+1. Use [Senhas de Aplicativo](https://myaccount.google.com/apppasswords) (recomendado)
+2. Não use a senha da conta Google
+3. Verifique se habilitou acesso a apps menos seguros (menos seguro, não recomendado)
+
+Exemplo `.env` correto:
+```env
+EMAIL_ADDRESS=seu_email@gmail.com
+EMAIL_PASSWORD=sua_senha_de_aplicativo  # Não é a senha da conta!
+```
+
+### Erro: "ConnectionRefusedError" ao iniciar servidor
+
+**Problema:** Porta 8000 já está em uso ou servidor não inicia.
+
+**Solução:** Use outra porta:
 ```bash
-# Linux - Instale Chrome
+uvicorn server:app --reload --port 8001
+```
+
+Ou libere a porta:
+```bash
+# Linux - Ver processo na porta
+lsof -i :8000
+
+# Matar processo
+kill -9 <PID>
+```
+
+### Erro: Selenium não encontra Chrome
+
+**Problema:** ChromeDriver não está disponível.
+
+**Solução:**
+```bash
+# Linux - Instalar Chrome
+sudo apt-get update
 sudo apt-get install google-chrome-stable
 
-# Ou use ChromeDriver manualmente
-# O webdriver-manager deveria fazer isso automaticamente
+# Verificar instalação
+google-chrome --version
+
+# Reinstalar dependências Python
+pip install --upgrade webdriver-manager selenium
 ```
 
 ### Erro: "CORS policy: No 'Access-Control-Allow-Origin'"
 
-**Solução:** CORS já está configurado em `server.py`, mas se persistir:
+**Problema:** Requisições do frontend são bloqueadas.
+
+**Solução:** CORS já está configurado em `server.py`, mas se persistir, verifique:
 ```python
-# Em server.py, verifique se o middleware está ativo
+# Em server.py
+from fastapi.middleware.cors import CORSMiddleware
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Em produção, use URLs específicas
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+```
+
+### Erro: "Permission denied" ao executar scripts
+
+**Problema:** Scripts Python não têm permissão de execução.
+
+**Solução:**
+```bash
+chmod +x criar_tabelas.py reset_banco.py
+python criar_tabelas.py  # Em vez de ./criar_tabelas.py
+```
+
+### Banco de dados vazio após inicializar
+
+**Problema:** Tabelas não foram criadas.
+
+**Solução:** Execute manualmente:
+```bash
+python criar_tabelas.py
+```
+
+E verifique se as tabelas foram criadas:
+```bash
+psql -U posemfoco_user -d posemfoco -c "\dt"
 ```
 
 ## 📊 Modelagem de Dados
@@ -463,30 +667,76 @@ CREATE TABLE edital (
 
 ## 📈 Próximas Melhorias
 
-- [ ] Autenticação com JWT tokens
-- [ ] Dashboard de visualização de editais
-- [ ] Histórico de notificações
-- [ ] Filtros avançados de busca
-- [ ] Suporte a múltiplas universidades
-- [ ] Aplicativo mobile (React Native)
-- [ ] Integração com WhatsApp
-- [ ] Sistema de recomendações com ML
+- [ ] Autenticação com JWT tokens (mais seguro que sessões simples)
+- [ ] Dashboard de visualização de editais com filtros avançados
+- [ ] Histórico de notificações enviadas
+- [ ] API para buscar editais com filtros (data, área, etc)
+- [ ] Suporte a múltiplas universidades (UFRJ, USP, etc)
+- [ ] Aplicativo mobile (React Native ou Flutter)
+- [ ] Integração com WhatsApp/Telegram
+- [ ] Sistema de recomendações com Machine Learning
+- [ ] Testes automatizados (pytest, unittest)
+- [ ] Deploy com Docker e CI/CD
+- [ ] Monitoramento e logs centralizados
+- [ ] Rate limiting e throttling nas APIs
 
-## 📞 Suporte e Contribuição
+## 📄 Padrões de Código
+
+### Convenções
+
+- **Python:** PEP 8 (seguir estilos do projeto existente)
+- **Banco de Dados:** Nomes em snake_case, plurais para tabelas
+- **API:** RESTful, nomes de endpoints em minúsculas
+- **Git:** Commits descritivos em português ou inglês
+- **Docstrings:** Descrever função, parâmetros e retorno
+
+### Exemplo de Função Bem Documentada
+
+```python
+def salvar_usuario(usuario: Usuario) -> int:
+    """
+    Salva um novo usuário no banco de dados.
+    
+    Args:
+        usuario: Objeto Usuario com nome, email e senha_hash
+        
+    Returns:
+        int: ID do usuário recém criado, ou None se falhar
+        
+    Raises:
+        Exception: Se email já existe ou erro de banco
+    """
+    # implementação...
+    pass
+```
+
+## 📞 Contribuição
 
 ### Reportar Bugs
 
 1. Abra uma [Issue](https://github.com/seu-usuario/PosEmFoco/issues)
-2. Descreva o problema em detalhes
-3. Inclua logs e screenshots se possível
+2. Descreva o problema com detalhes
+3. Inclua logs e/ou screenshots se possível
+4. Mencione sua versão de Python e OS
 
-### Contribuir
+### Contribuir com Código
 
-1. Fork o repositório
-2. Crie uma branch para sua feature (`git checkout -b feature/nova-feature`)
-3. Commit suas mudanças (`git commit -m 'Adiciona nova feature'`)
-4. Push para a branch (`git push origin feature/nova-feature`)
-5. Abra um Pull Request
+1. Faça um Fork do repositório
+2. Crie uma branch para sua feature (`git checkout -b feature/nova-funcionalidade`)
+3. Commit suas mudanças com mensagens descritivas
+   ```bash
+   git commit -m "Adiciona nova funcionalidade de filtro"
+   ```
+4. Push para a branch (`git push origin feature/nova-funcionalidade`)
+5. Abra um Pull Request descrevendo suas mudanças
+
+### Diretrizes de Contribuição
+
+- Seguir o padrão de código do projeto
+- Testar mudanças localmente antes de fazer push
+- Adicionar comentários em código complexo
+- Atualizar documentação se necessário
+- Manter coerência com a estrutura existente
 
 ## 📄 Licença
 
@@ -498,8 +748,10 @@ Desenvolvido com ❤️ para facilitar a vida dos alunos de pós-graduação da 
 
 ---
 
-**Última atualização:** Janeiro de 2026
+**Última atualização:** 25 de janeiro de 2026
 
 **Versão:** 1.0.0
+
+**Status:** Em desenvolvimento 🚀
 
 Para mais informações, visite: [GitHub Repository](https://github.com/seu-usuario/PosEmFoco)
