@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro - PósEmFoco</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <h2>PósEmFoco</h2>
+    <form id="formCadastro">
+
+        <div class="form-group">
+            <label for="nome">Nome completo</label>
+            <input type="text" id="nome" placeholder="Seu nome" required>
+        </div>
+
+        <div class="form-group">
+            <label for="email">E-mail</label>
+            <input type="email" id="email" placeholder="seu@email.com" required>
+        </div>
+
+        <div class="form-group">
+            <label for="nivel_graduacao">Nível de Interesse</label>
+            <select id="nivel_graduacao" required>
+                <option value="">Selecione...</option>
+                <option value="graduacao">Graduação</option>
+                <option value="especializacao">Especialização</option>
+                <option value="mestrado">Mestrado</option>
+                <option value="doutorado">Doutorado</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="senha">Senha</label>
+            <input type="password" id="senha" placeholder="Crie uma senha forte" required>
+        </div>
+
+        <div class="form-group">
+            <label for="interesses">Palavras-chave de Interesse</label>
+            <input type="text" id="interesses" placeholder="Ex: IA, Direito, Enfermagem">
+            <p class="hint">Separe os temas por vírgula.</p>
+        </div>
+
+        <button type="submit" id="btnSubmit">Cadastrar-se</button>
+    </form>
+</div>
+
+<div id="toast"></div>
+
+<script>
+    const form = document.getElementById('formCadastro');
+    const toast = document.getElementById('toast');
+    const btnSubmit = document.getElementById('btnSubmit');
+
+    
+    function showToast(message, type) {
+        toast.textContent = message;
+        toast.className = type; // 'success' ou 'error'
+        
+        
+        setTimeout(() => { 
+            toast.className = toast.className.replace(type, ""); 
+        }, 5000);
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        
+        btnSubmit.textContent = "Cadastrando...";
+        btnSubmit.disabled = true;
+
+        const interessesInput = document.getElementById('interesses').value;
+        const listaInteresses = interessesInput.split(',').map(s => s.trim()).filter(s => s);
+
+        const dados = {
+            nome: document.getElementById('nome').value,
+            email: document.getElementById('email').value,
+            senha: document.getElementById('senha').value,
+            nivel_graduacao: document.getElementById('nivel_graduacao').value,
+            interesses: listaInteresses
+        };
+
+        try {
+            const response = await fetch('http://127.0.0.1:8000/cadastro', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dados)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                showToast("Cadastrado com sucesso! Agora é só aguardar o e-mail.", "success");
+                form.reset(); // Limpa os campos
+                window.location.href = "login.html";
+            } else {
+                showToast("Erro: " + result.detail, "error");
+            }
+
+        } catch (error) {
+            console.error(error);
+            showToast("Erro ao conectar com o servidor.", "error");
+        } finally {
+            btnSubmit.textContent = "Cadastrar-se";
+            btnSubmit.disabled = false;
+        }
+    });
+</script>
+
+</body>
+</html>
