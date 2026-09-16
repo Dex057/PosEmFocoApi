@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel - PósEmFoco</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230d7a6f'/%3E%3Ctext x='16' y='23' font-family='Segoe UI,sans-serif' font-size='19' font-weight='700' fill='white' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topo">
+    <span class="logo"><span class="selo">P</span> PósEmFoco</span>
+    <div class="topo-usuario">
+        <span class="inicial" id="inicial" aria-hidden="true"></span>
+        <span class="nome" id="nomeUsuario"></span>
+        <button class="fantasma" onclick="sair()">Sair</button>
+    </div>
+</header>
+
+<main class="conteudo">
+
+    <section class="saudacao">
+        <h1 id="saudacao">Olá</h1>
+        <p id="resumoGeral">Carregando seus editais...</p>
+    </section>
+
+    <section class="bloco">
+        <div class="bloco-cabecalho">
+            <h2>Seus interesses</h2>
+            <span class="dica" id="contadorInteresses"></span>
+        </div>
+        <p class="dica">O robô avisa por e-mail quando um edital novo bate com uma dessas palavras.</p>
+
+        <div class="chips" id="chips"></div>
+
+        <form class="linha" id="formInteresse">
+            <input type="text" id="novoInteresse" placeholder="Ex: ensino de matemática" maxlength="100" aria-label="Nova palavra-chave">
+            <button type="submit" class="secundario">Adicionar</button>
+            <button type="button" id="btnSalvar" onclick="salvarInteresses()">Salvar</button>
+        </form>
+    </section>
+
+    <div class="barra">
+        <div class="abas" role="tablist">
+            <button id="abaMeus" class="ativa" role="tab" onclick="trocarAba('meus')">Meus editais</button>
+            <button id="abaTodos" role="tab" onclick="trocarAba('todos')">Todos</button>
+        </div>
+        <button id="btnBuscar" class="secundario" onclick="buscarAgora()">Buscar agora</button>
+    </div>
+
+    <div id="area" aria-live="polite">
+        <div class="esqueleto"><div></div><div></div><div></div></div>
+    </div>
+
+</main>
+
+<script src="app.js"></script>
+<script>
+    exigirSessao();
+
+    document.getElementById('nomeUsuario').textContent = sessao.usuario.nome;
+    document.getElementById('inicial').textContent = iniciais(sessao.usuario.nome);
+    document.getElementById('saudacao').textContent = `Olá, ${sessao.usuario.nome.split(' ')[0]}`;
+
+    let interesses = [];
+    let abaAtual = 'meus';
+
+    function desenharChips() {
+        const container = document.getElementById('chips');
+        const contador = document.getElementById('contadorInteresses');
+        container.textContent = '';
+        contador.textContent = interesses.length ? `${interesses.length} palavra${interesses.length > 1 ? 's' : ''}` : '';
+
+        if (!interesses.length) {
+            const vazio = document.createElement('span');
+            vazio.className = 'dica';
+            vazio.textContent = 'Nenhuma palavra-chave ainda — adicione ao menos uma.';
+            container.appendChild(vazio);
+            return;
+        }
+
+        interesses.forEach((palavra, indice) => {
+            const chip = document.createElement('span');
+            chip.className = 'chip';
+            chip.textContent = palavra;
+
+            const remover = document.createElement('button');
+            remover.type = 'button';
+            remover.textContent = '×';
+            remover.setAttribute('aria-label', `Remover ${palavra}`);
+            remover.onclick = () => { interesses.splice(indice, 1); desenharChips(); };
+
+            chip.appendChild(remover);
+            container.appendChild(chip);
+        });
+    }
+
+    document.getElementById('formInteresse').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const campo = document.getElementById('novoInteresse');
+        const palavra = campo.value.trim();
+        if (!palavra) return;
+
+        if (interesses.some(i => i.toLowerCase() === palavra.toLowerCase())) {
+            toast('Essa palavra já está na lista.', 'erro');
+            return;
+        }
+
+        interesses.push(palavra);
+        campo.value = '';
+        desenharChips();
+        campo.focus();
+    });
+
+    function salvarInteresses() {
+        comBotao(document.getElementById('btnSalvar'), 'Salvando...', async () => {
+            interesses = await api('/me/interesses', {
+                method: 'PUT',
+                body: JSON.stringify({ interesses })
+            });
+            desenharChips();
+            toast('Interesses salvos.');
+            if (abaAtual === 'meus') carregarEditais();
+        });
+    }
+
+    function buscarAgora() {
+        comBotao(document.getElementById('btnBuscar'), 'Buscando...', async () => {
+            const resposta = await api('/scraper/rodar', { method: 'POST' });
+            toast(resposta.mensagem);
+        });
+    }
+
+    function trocarAba(aba) {
+        abaAtual = aba;
+        document.getElementById('abaMeus').classList.toggle('ativa', aba === 'meus');
+        document.getElementById('abaTodos').classList.toggle('ativa', aba === 'todos');
+        carregarEditais();
+    }
+
+    function montarCartao(edital) {
+        const dados = interpretarEdital(edital);
+        const item = document.createElement('li');
+
+        if (dados.instituicao || dados.prazo) {
+            const meta = document.createElement('div');
+            meta.className = 'meta';
+
+            if (dados.instituicao) {
+                const selo = document.createElement('span');
+                selo.className = 'etiqueta';
+                selo.textContent = dados.instituicao;
+                meta.appendChild(selo);
+            }
+            if (dados.prazo) {
+                const prazo = document.createElement('span');
+                prazo.className = `etiqueta prazo${dados.prazo.urge ? ' urge' : ''}`;
+                prazo.textContent = dados.prazo.rotulo;
+                meta.appendChild(prazo);
+            }
+            item.appendChild(meta);
+        }
+
+        const href = linkSeguro(edital.link);
+        const titulo = document.createElement(href ? 'a' : 'span');
+        titulo.className = 'titulo';
+        titulo.textContent = dados.titulo;
+        if (href) {
+            titulo.href = href;
+            titulo.target = '_blank';
+            titulo.rel = 'noopener noreferrer';
+        }
+        item.appendChild(titulo);
+
+        if (dados.palavra && dados.instituicao) {
+            const rodape = document.createElement('p');
+            rodape.className = 'rodape';
+            rodape.textContent = `Combinou com: ${dados.palavra}`;
+            item.appendChild(rodape);
+        }
+
+        return item;
+    }
+
+    function mostrarEstado(titulo, texto) {
+        const area = document.getElementById('area');
+        area.textContent = '';
+        const caixa = document.createElement('div');
+        caixa.className = 'estado';
+        const forte = document.createElement('strong');
+        forte.textContent = titulo;
+        const p = document.createElement('p');
+        p.textContent = texto;
+        caixa.append(forte, p);
+        area.appendChild(caixa);
+    }
+
+    async function carregarEditais() {
+        const area = document.getElementById('area');
+        area.innerHTML = '<div class="esqueleto"><div></div><div></div><div></div></div>';
+
+        try {
+            const editais = await api(abaAtual === 'meus' ? '/me/editais' : '/editais');
+
+            if (abaAtual === 'meus') {
+                document.getElementById('resumoGeral').textContent = editais.length
+                    ? `${editais.length} edital${editais.length > 1 ? 'es' : ''} combinando com seus interesses.`
+                    : 'Nenhum edital combinando com seus interesses por enquanto.';
+            }
+
+            if (!editais.length) {
+                return abaAtual === 'meus'
+                    ? mostrarEstado('Nada por aqui ainda',
+                        'Nenhum edital bateu com suas palavras-chave. O robô verifica periodicamente — ou use "Buscar agora".')
+                    : mostrarEstado('Nenhum edital coletado',
+                        'O robô ainda não guardou nada. Use "Buscar agora" para forçar uma rodada.');
+            }
+
+            const lista = document.createElement('ul');
+            lista.className = 'editais';
+            editais.forEach(edital => lista.appendChild(montarCartao(edital)));
+
+            area.textContent = '';
+            area.appendChild(lista);
+        } catch (erro) {
+            mostrarEstado('Não deu para carregar', erro.message);
+        }
+    }
+
+    async function iniciar() {
+        try {
+            interesses = await api('/me/interesses');
+        } catch (erro) {
+            toast(erro.message, 'erro');
+        }
+        desenharChips();
+        carregarEditais();
+    }
+
+    iniciar();
+</script>
+
+</body>
+</html>
