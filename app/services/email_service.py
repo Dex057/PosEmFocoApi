@@ -10,8 +10,8 @@ EMAIL_REMETENTE = os.getenv("EMAIL_ADDRESS")
 SENHA_APP = os.getenv("EMAIL_PASSWORD")
 
 
-def enviar_notificacao(email_destinatario, titulo_edital, link_edital, palavra_chave):
-    
+def enviar_notificacao(email_destinatario, titulo_edital, link_edital, palavra_chave, universidade="instituição"):
+
     msg = EmailMessage()
     msg['Subject'] = f"PosEmFoco: Novo edital encontrado ({palavra_chave})"
     msg['From'] = EMAIL_REMETENTE
@@ -22,7 +22,8 @@ def enviar_notificacao(email_destinatario, titulo_edital, link_edital, palavra_c
     Ola!
     
     Encontramos um novo edital compativel com seu interesse: "{palavra_chave}".
-    
+
+    Instituicao: {universidade}
     Titulo: {titulo_edital}
     Link: {link_edital}
     
@@ -56,10 +57,11 @@ def enviar_notificacao(email_destinatario, titulo_edital, link_edital, palavra_c
                 
                 <div class="card">
                     <h3>{titulo_edital}</h3>
+                    <p style="color: #666; font-size: 14px;">Publicado por: <strong>{universidade}</strong></p>
                     <p><a href="{link_edital}" class="btn" style="color: white;">Acessar Edital</a></p>
                 </div>
-                
-                <p>Clique no botão acima para ver todos os detalhes no site da UFPA.</p>
+
+                <p>Clique no botão acima para ver todos os detalhes no site da {universidade}.</p>
             </div>
             <div class="footer">
                 <p>Este é um e-mail automático do sistema PósEmFoco.</p>
