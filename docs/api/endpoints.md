@@ -2,6 +2,11 @@
 
 Documentação técnica completa de todos os endpoints REST do PósEmFoco.
 
+> ⚠️ **Desatualizado em parte.** A seção "API Endpoints" do [README](../../README.md) é a fonte da verdade.
+> Mudanças recentes: `GET /` virou redirect para o front (status agora é `GET /health`), o login devolve um
+> `token` de sessão em vez de disparar o scraper, `GET /usuarios/{id}/editais` virou `GET /me/editais`, e
+> existem `GET|PUT /me/interesses` e `POST /scraper/rodar` — todos com `Authorization: Bearer <token>`.
+
 ## 🎯 Visão Geral
 
 API segue padrão REST com:
