@@ -5,16 +5,12 @@ class EditalDAO:
         conn = get_connection()
         try:
             cursor = conn.cursor()
-            
-            # para verificação de duplicidade via link
-            sql_check = "SELECT id FROM edital WHERE link = %s"
-            cursor.execute(sql_check, (edital['link'],))
-            if cursor.fetchone():
-                return False 
 
+            # UNIQUE(link) no banco garante atomicidade (sem race condition entre check e insert)
             sql = """
-                INSERT INTO edital (titulo, link, resumo, data_publicacao) 
+                INSERT INTO edital (titulo, link, resumo, data_publicacao)
                 VALUES (%s, %s, %s, %s)
+                ON CONFLICT (link) DO NOTHING
             """
             cursor.execute(sql, (
                 edital['titulo'],
@@ -22,10 +18,11 @@ class EditalDAO:
                 edital.get('resumo'),
                 edital.get('data_publicacao')
             ))
-            
+
+            era_novo = cursor.rowcount > 0
             conn.commit()
             cursor.close()
-            return True
+            return era_novo
         except Exception as e:
             print(f"Erro ao salvar edital: {e}")
             if conn:
@@ -35,11 +32,31 @@ class EditalDAO:
             if conn:
                 conn.close()
 
+    def listar_por_palavras(self, palavras):
+        if not palavras:
+            return []
+        conn = get_connection()
+        try:
+            cursor = conn.cursor()
+            condicoes = " OR ".join(["titulo ILIKE %s"] * len(palavras))
+            sql = f"SELECT * FROM edital WHERE {condicoes} ORDER BY id DESC"
+            cursor.execute(sql, [f"%{palavra}%" for palavra in palavras])
+            editais = cursor.fetchall()
+            cursor.close()
+            return editais
+        except Exception as e:
+            print(f"Erro ao listar editais por palavras: {e}")
+            return []
+        finally:
+            if conn:
+                conn.close()
+
     def listar_todos(self):
         conn = get_connection()
         try:
             cursor = conn.cursor()
-            sql = "SELECT * FROM edital ORDER BY data_publicacao DESC"
+            # data_publicacao costuma vir vazia do scraper; data_coleta sempre existe
+            sql = "SELECT * FROM edital ORDER BY data_coleta DESC"
             cursor.execute(sql)
             editais = cursor.fetchall()
             cursor.close()
