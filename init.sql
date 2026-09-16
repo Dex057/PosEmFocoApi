@@ -3,20 +3,22 @@ CREATE TABLE IF NOT EXISTS usuario (
     nome VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     senha_hash VARCHAR(200) NOT NULL,
-    nivel_graduacao VARCHAR(50)
+    nivel_graduacao VARCHAR(50),
+    data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 
 CREATE TABLE IF NOT EXISTS interesse (
     id SERIAL PRIMARY KEY,
-    usuario_id INTEGER REFERENCES usuario(id),
-    palavra_chave VARCHAR(100)
+    usuario_id INTEGER REFERENCES usuario(id) ON DELETE CASCADE,
+    palavra_chave VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS edital (
     id SERIAL PRIMARY KEY,
-    titulo VARCHAR(200),
-    link TEXT,
+    titulo VARCHAR(200) NOT NULL,
+    link TEXT UNIQUE NOT NULL,
     resumo TEXT,
-    data_publicacao VARCHAR(50)
+    data_publicacao VARCHAR(50),
+    data_coleta TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

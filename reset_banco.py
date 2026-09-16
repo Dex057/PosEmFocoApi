@@ -1,5 +1,5 @@
 from app.utils.db import get_connection
-from criar_tabelas import criar_tabelas
+from criar_tabelas import criar_tabelas  # mesma função usada em criar_tabelas.py, evita schema duplicado
 
 def resetar_banco():
     conn = get_connection()
