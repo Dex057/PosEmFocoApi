@@ -1,0 +1,7 @@
+# Sem domínio ainda: serve em HTTP simples na porta 80, sem certificado.
+# Quando tiver um domínio apontado pro IP do servidor, troque ":80" pelo
+# domínio (ex.: "api.seudominio.com") — o Caddy provisiona HTTPS sozinho
+# via Let's Encrypt, sem precisar mudar mais nada.
+:80 {
+	reverse_proxy app:8000
+}
