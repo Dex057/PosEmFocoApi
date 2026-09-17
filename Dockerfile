@@ -2,12 +2,11 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y wget gnupg unzip --no-install-recommends && \
-    mkdir -p /etc/apt/keyrings && \
-    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /etc/apt/keyrings/google-chrome.gpg && \
-    sh -c 'echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list' && \
-    apt-get update && \
-    apt-get install -y google-chrome-stable --no-install-recommends && \
+# Chromium + chromium-driver vêm do repositório padrão do Debian para amd64 E arm64
+# (diferente do Google Chrome, que só publica pacote .deb para amd64) — assim a mesma
+# imagem builda tanto numa máquina normal quanto num host ARM (ex.: Oracle Cloud Free Tier).
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends chromium chromium-driver && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

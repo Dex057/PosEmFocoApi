@@ -1,10 +1,10 @@
+import os
 import time
 import logging
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -13,9 +13,17 @@ from app.services.scraping.fontes import FonteEdital
 
 logger = logging.getLogger(__name__)
 
+# O Dockerfile instala chromium/chromium-driver do Debian (funciona em amd64 e arm64),
+# em vez do Google Chrome baixado pelo webdriver-manager em runtime (só existe pra amd64
+# e depende de internet no boot do container). Os caminhos abaixo batem com o pacote
+# Debian; ajuste via env se rodar fora do Docker (ex.: dev local no Windows/Mac).
+CHROMIUM_BIN = os.getenv("CHROMIUM_BIN", "/usr/bin/chromium")
+CHROMEDRIVER_BIN = os.getenv("CHROMEDRIVER_BIN", "/usr/bin/chromedriver")
+
 
 def _criar_driver():
     options = Options()
+    options.binary_location = CHROMIUM_BIN
     options.add_argument("--headless=new")
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--no-sandbox")
@@ -27,7 +35,7 @@ def _criar_driver():
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
         "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     )
-    return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    return webdriver.Chrome(service=Service(CHROMEDRIVER_BIN), options=options)
 
 
 def coletar(fonte: FonteEdital) -> list[tuple[str, str]]:
