@@ -35,6 +35,22 @@ class UsuarioDAOFalso:
         return self.usuarios.get(email)
 
 
+class SessaoDAOFalso:
+    def __init__(self):
+        self.sessoes = {}
+
+    def criar(self, token, usuario_id):
+        self.sessoes[token] = usuario_id
+        return True
+
+    def usuario_id_por_token(self, token):
+        return self.sessoes.get(token)
+
+    def remover(self, token):
+        self.sessoes.pop(token, None)
+        return True
+
+
 class InteresseDAOFalso:
     def __init__(self):
         self.por_usuario = {}
@@ -64,13 +80,16 @@ def usar_daos_falsos():
     server.usuario_dao = UsuarioDAOFalso()
     server.interesse_dao = InteresseDAOFalso()
     server.edital_dao = EditalDAOFalso()
+    server.sessao_dao = SessaoDAOFalso()
 
 
 def demo():
     usar_daos_falsos()
 
     disparos = []
-    server.executar_scraper = lambda: disparos.append(1)
+    # Troca a função inteira (não só executar_scraper): o lock do scraper agora usa
+    # advisory lock do Postgres, e este teste roda sem banco.
+    server.rodar_scraper_uma_vez = lambda: disparos.append(1)
 
     cliente = TestClient(server.app)
 
@@ -108,7 +127,10 @@ def demo():
 
     assert cliente.get("/", follow_redirects=False).headers["location"] == "/frontend/login.html"
 
-    print("OK: cadastro, login, sessão, interesses, filtro de editais e disparo do scraper.")
+    assert cliente.post("/logout", headers=auth).status_code == 200
+    assert cliente.get("/me/interesses", headers=auth).status_code == 401, "token devia morrer após logout"
+
+    print("OK: cadastro, login, sessão, interesses, filtro de editais, disparo do scraper e logout.")
 
 
 def servir():
@@ -128,7 +150,7 @@ def servir():
         {"id": 4, "titulo": "Ufra abre processo seletivo de professor bolsista para especialização",
          "link": "https://novo.ufra.edu.br/noticia-4", "resumo": "[UFRA] Contém: especialização"},
     ]
-    server.executar_scraper = lambda: print("Modo demo: scraper não roda de verdade.")
+    server.rodar_scraper_uma_vez = lambda: print("Modo demo: scraper não roda de verdade.")
 
     TestClient(server.app).post("/cadastro", json={
         "nome": "Usuária Demo", "email": "demo@posemfoco.br", "senha": "demo123",

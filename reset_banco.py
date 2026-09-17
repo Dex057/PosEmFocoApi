@@ -11,9 +11,10 @@ def resetar_banco():
         
         print(" Apagando tabelas existentes...")
       
+        cursor.execute("DROP TABLE IF EXISTS sessao CASCADE;")
         cursor.execute("DROP TABLE IF EXISTS interesse CASCADE;")
         cursor.execute("DROP TABLE IF EXISTS usuario CASCADE;")
-        cursor.execute("DROP TABLE IF EXISTS edital CASCADE;") 
+        cursor.execute("DROP TABLE IF EXISTS edital CASCADE;")
         
         conn.commit()
         cursor.close()

@@ -1,5 +1,5 @@
+import os
 import secrets
-import threading
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +12,8 @@ from passlib.context import CryptContext
 from app.dao.usuario_dao import UsuarioDAO
 from app.dao.interesse_dao import InteresseDAO
 from app.dao.edital_dao import EditalDAO
+from app.dao.sessao_dao import SessaoDAO
+from app.utils.db import get_connection
 from app.services.scraper import executar_scraper
 
 app = FastAPI(title="PósEmFoco")
@@ -25,9 +27,15 @@ def verificar_senha(senha_pura: str, senha_hash: str):
     return pwd_context.verify(senha_pura, senha_hash)
 
 
+# Em produção defina ALLOWED_ORIGINS com a(s) URL(s) reais do frontend, separadas por
+# vírgula (ex.: "https://posemfoco.vercel.app"). Sem essa variável, libera geral — ok
+# para desenvolvimento local, não para produção.
+_origens = os.getenv("ALLOWED_ORIGINS", "*")
+ALLOWED_ORIGINS = ["*"] if _origens.strip() == "*" else [o.strip() for o in _origens.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,32 +46,45 @@ app.mount("/frontend", StaticFiles(directory="frontend", html=True), name="front
 usuario_dao = UsuarioDAO()
 interesse_dao = InteresseDAO()
 edital_dao = EditalDAO()
+sessao_dao = SessaoDAO()
 
-# ponytail: sessões em memória — somem no restart e não valem para múltiplos workers.
-# Trocar por JWT ou tabela de sessão quando sair do MVP.
-SESSOES: dict[str, int] = {}
-
-# ponytail: lock global de processo — só impede o scraper rodar duas vezes nesta instância.
-# Com mais de um container, usar advisory lock do Postgres.
-_lock_scraper = threading.Lock()
+# Lock do scraper via advisory lock do Postgres: funciona mesmo com mais de um
+# container/worker rodando a API, porque a exclusão é garantida pelo banco, não pelo processo.
+_SCRAPER_LOCK_ID = 875321
 
 
 def usuario_logado(authorization: str = Header(None)) -> int:
     token = (authorization or "").removeprefix("Bearer ").strip()
-    usuario_id = SESSOES.get(token)
+    usuario_id = token and sessao_dao.usuario_id_por_token(token)
     if not usuario_id:
         raise HTTPException(status_code=401, detail="Sessão expirada. Faça login novamente.")
     return usuario_id
 
 
 def rodar_scraper_uma_vez():
-    if not _lock_scraper.acquire(blocking=False):
-        print("Scraper já está rodando, ignorando novo disparo.")
+    conn = get_connection()
+    if not conn:
+        print("Não foi possível conectar ao banco para obter o lock do scraper.")
         return
     try:
-        executar_scraper()
+        cursor = conn.cursor()
+        cursor.execute("SELECT pg_try_advisory_lock(%s)", (_SCRAPER_LOCK_ID,))
+        linha = cursor.fetchone()
+        obtido = linha['pg_try_advisory_lock'] if isinstance(linha, dict) else linha[0]
+        cursor.close()
+
+        if not obtido:
+            print("Scraper já está rodando em outra instância, ignorando novo disparo.")
+            return
+
+        try:
+            executar_scraper()
+        finally:
+            cursor = conn.cursor()
+            cursor.execute("SELECT pg_advisory_unlock(%s)", (_SCRAPER_LOCK_ID,))
+            cursor.close()
     finally:
-        _lock_scraper.release()
+        conn.close()
 
 
 class UsuarioInput(BaseModel):
@@ -135,7 +156,8 @@ def login(dados: LoginInput):
         raise HTTPException(status_code=401, detail="Email ou senha incorretos")
 
     token = secrets.token_urlsafe(32)
-    SESSOES[token] = usuario_encontrado['id']
+    if not sessao_dao.criar(token, usuario_encontrado['id']):
+        raise HTTPException(status_code=500, detail="Erro interno ao criar sessão.")
 
     return {
         "mensagem": "Login realizado com sucesso.",
@@ -147,6 +169,13 @@ def login(dados: LoginInput):
             "nivel_graduacao": usuario_encontrado['nivel_graduacao']
         }
     }
+
+@app.post("/logout")
+def logout(authorization: str = Header(None)):
+    token = (authorization or "").removeprefix("Bearer ").strip()
+    if token:
+        sessao_dao.remover(token)
+    return {"mensagem": "Sessão encerrada."}
 
 @app.get("/editais")
 def listar_editais():

@@ -25,6 +25,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - EMAIL_ADDRESS=${EMAIL_ADDRESS}
       - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
     restart: unless-stopped
 
   worker:

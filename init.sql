@@ -22,3 +22,11 @@ CREATE TABLE IF NOT EXISTS edital (
     data_publicacao VARCHAR(50),
     data_coleta TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Sessões de login. Substitui o dicionário em memória: sobrevive a restart/deploy
+-- e funciona com mais de um processo/worker da API por trás do mesmo Postgres.
+CREATE TABLE IF NOT EXISTS sessao (
+    token VARCHAR(64) PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuario(id) ON DELETE CASCADE,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
