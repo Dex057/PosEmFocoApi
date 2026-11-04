@@ -47,7 +47,64 @@ def enviar_notificacao(email_destinatario, titulo_edital, link, palavra_chave):
         
         # Montar email HTML
         mensagem = MIMEMultipart('alternative')
-        mensagem['Subject'] = f\"🎓 Novo Edital: {titulo_edital}\"\n        mensagem['From'] = email_sender\n        mensagem['To'] = email_destinatario\n        \n        # Corpo em HTML\n        html = f\"\"\"\n        <html>\n            <head>\n                <style>\n                    body {{ font-family: Arial, sans-serif; }}\n                    .container {{ max-width: 600px; margin: 0 auto; }}\n                    .header {{ background-color: #007bff; color: white; padding: 20px; }}\n                    .content {{ padding: 20px; }}\n                    .link {{ background-color: #28a745; color: white; }}\n                    a {{ color: #007bff; text-decoration: none; }}\n                </style>\n            </head>\n            <body>\n                <div class=\"container\">\n                    <div class=\"header\">\n                        <h1>🎓 PósEmFoco</h1>\n                        <p>Nova oportunidade de pós-graduação</p>\n                    </div>\n                    <div class=\"content\">\n                        <p>Olá!</p>\n                        <p>Encontramos um novo edital que corresponde aos seus interesses:</p>\n                        <h2>{titulo_edital}</h2>\n                        <p><strong>Palavra-chave:</strong> {palavra_chave}</p>\n                        <p>\n                            <a href=\"{link}\" class=\"link\" style=\"padding: 10px 20px; display: inline-block; background-color: #28a745; color: white; border-radius: 5px;\">\n                                Ver Edital\n                            </a>\n                        </p>\n                        <hr>\n                        <p>Acompanhe o PósEmFoco para receber mais notificações!</p>\n                        <p style=\"color: #666; font-size: 12px;\">\n                            Este é um email automático. Não responda este email.\n                        </p>\n                    </div>\n                </div>\n            </body>\n        </html>\n        \"\"\"\n        \n        # Adicionar corpo\n        parte_html = MIMEText(html, 'html')\n        mensagem.attach(parte_html)\n        \n        # Enviar\n        servidor.sendmail(email_sender, email_destinatario, mensagem.as_string())\n        servidor.quit()\n        \n        print(f\"[EMAIL] ✅ Email enviado para {email_destinatario}\")\n        return True\n        \n    except Exception as e:\n        print(f\"[EMAIL] ❌ Erro ao enviar email: {e}\")\n        return False
+        mensagem['Subject'] = f"🎓 Novo Edital: {titulo_edital}"
+        mensagem['From'] = email_sender
+        mensagem['To'] = email_destinatario
+        
+        # Corpo em HTML
+        html = f"""
+        <html>
+            <head>
+                <style>
+                    body {{ font-family: Arial, sans-serif; }}
+                    .container {{ max-width: 600px; margin: 0 auto; }}
+                    .header {{ background-color: #007bff; color: white; padding: 20px; }}
+                    .content {{ padding: 20px; }}
+                    .link {{ background-color: #28a745; color: white; }}
+                    a {{ color: #007bff; text-decoration: none; }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>🎓 PósEmFoco</h1>
+                        <p>Nova oportunidade de pós-graduação</p>
+                    </div>
+                    <div class="content">
+                        <p>Olá!</p>
+                        <p>Encontramos um novo edital que corresponde aos seus interesses:</p>
+                        <h2>{titulo_edital}</h2>
+                        <p><strong>Palavra-chave:</strong> {palavra_chave}</p>
+                        <p>
+                            <a href="{link}" class="link" style="padding: 10px 20px; display: inline-block; background-color: #28a745; color: white; border-radius: 5px;">
+                                Ver Edital
+                            </a>
+                        </p>
+                        <hr>
+                        <p>Acompanhe o PósEmFoco para receber mais notificações!</p>
+                        <p style="color: #666; font-size: 12px;">
+                            Este é um email automático. Não responda este email.
+                        </p>
+                    </div>
+                </div>
+            </body>
+        </html>
+        """
+        
+        # Adicionar corpo
+        parte_html = MIMEText(html, 'html')
+        mensagem.attach(parte_html)
+        
+        # Enviar
+        servidor.sendmail(email_sender, email_destinatario, mensagem.as_string())
+        servidor.quit()
+        
+        print(f"[EMAIL] ✅ Email enviado para {email_destinatario}")
+        return True
+        
+    except Exception as e:
+        print(f"[EMAIL] ❌ Erro ao enviar email: {e}")
+        return False
 ```
 
 ---
@@ -58,8 +115,144 @@ O email enviado tem este formato:
 
 ```
 ╔═══════════════════════════════════════╗
-║  🎓 PósEmFoco                        ║\n║  Nova oportunidade de pós-graduação   ║\n╚═══════════════════════════════════════╝\n\nOlá!\n\nEncontramos um novo edital que corresponde \naos seus interesses:\n\n┌─────────────────────────────────────┐\n│ Mestrado em Computação              │\n│ (Edital 2026/01)                    │\n└─────────────────────────────────────┘\n\nPalavra-chave: Computação\n\n┌─────────────────────────────────────┐\n│         [Ver Edital]                │\n└─────────────────────────────────────┘\n\nAcompanhe o PósEmFoco para receber mais!\n```
+║  🎓 PósEmFoco                        ║
+║  Nova oportunidade de pós-graduação   ║
+╚═══════════════════════════════════════╝
 
----\n\n## 🔐 Configuração\n\n### Variáveis de Ambiente\n\n**Arquivo: `.env`**\n\n```env\nEMAIL_ADDRESS=seu_email@gmail.com\nEMAIL_PASSWORD=sua_senha_de_aplicativo\n```\n\n### Gerar Senha de Aplicativo\n\n1. Acesse: https://myaccount.google.com/apppasswords\n2. Selecione:\n   - App: **Mail**\n   - Device: **Windows Computer** (ou seu SO)\n3. Google gerará senha de 16 caracteres\n4. Copie para `.env` em `EMAIL_PASSWORD`\n\n**Importante:** NÃO é a senha da sua conta Gmail!\n\n---\n\n## 🧪 Testar Email\n\n### Teste Manual\n\n```python\nfrom app.services.email_service import enviar_notificacao\n\nresultado = enviar_notificacao(\n    email_destinatario='seu_email@gmail.com',\n    titulo_edital='Mestrado em Computação',\n    link='https://www.ufpa.edu.br/edital-1',\n    palavra_chave='Computação'\n)\n\nif resultado:\n    print(\"✅ Email enviado com sucesso!\")\nelse:\n    print(\"❌ Erro ao enviar email\")\n```
+Olá!
 
-### Via Linha de Comando\n\n```bash\npython -c \"\nfrom app.services.email_service import enviar_notificacao\nenviar_notificacao(\n    'seu_email@gmail.com',\n    'Teste PósEmFoco',\n    'https://example.com',\n    'Teste'\n)\n\"\n```\n\n---\n\n## ⚠️ Troubleshooting\n\n### SMTPAuthenticationError\n\n**Erro:**\n```\nsmtplib.SMTPAuthenticationError: (535, 'Email ou senha incorretos')\n```\n\n**Solução:**\n1. Verifique EMAIL_PASSWORD é a senha de APP (não conta)\n2. Gere nova senha em https://myaccount.google.com/apppasswords\n3. Habilite 2FA no Gmail\n4. Tente novamente\n\n---\n\n### Connection Timeout\n\n**Erro:**\n```\nsocket.timeout: _ssl.c:1102: The handshake operation timed out\n```\n\n**Solução:**\n1. Verifique conexão internet\n2. Tente outra rede (Wi-Fi ou dados)\n3. Verificar firewall (porta 587 bloqueada?)\n4. Usar VPN se Gmail bloqueado\n\n---\n\n### Email não chega\n\n**Soluções em ordem:**\n1. Verificar spam/lixeira\n2. Verificar email está correto em BD\n3. Testador manualmente (código acima)\n4. Verificar logs: `journalctl -u posemfoco`\n5. Verificar credenciais Gmail\n\n---\n\n## 🚀 Futuras Melhorias\n\n- [ ] Templates de email dinâmicos\n- [ ] Suporte WhatsApp\n- [ ] Suporte Telegram\n- [ ] Queue de emails (Redis)\n- [ ] Histórico de notificações\n- [ ] Preferências de frequência\n\n---\n\n**Versão:** 1.0.0 | **Última atualização:** 25/01/2026\n"
+Encontramos um novo edital que corresponde 
+aos seus interesses:
+
+┌─────────────────────────────────────┐
+│ Mestrado em Computação              │
+│ (Edital 2026/01)                    │
+└─────────────────────────────────────┘
+
+Palavra-chave: Computação
+
+┌─────────────────────────────────────┐
+│         [Ver Edital]                │
+└─────────────────────────────────────┘
+
+Acompanhe o PósEmFoco para receber mais!
+```
+
+---
+
+## 🔐 Configuração
+
+### Variáveis de Ambiente
+
+**Arquivo: `.env`**
+
+```env
+EMAIL_ADDRESS=seu_email@gmail.com
+EMAIL_PASSWORD=sua_senha_de_aplicativo
+```
+
+### Gerar Senha de Aplicativo
+
+1. Acesse: https://myaccount.google.com/apppasswords
+2. Selecione:
+   - App: **Mail**
+   - Device: **Windows Computer** (ou seu SO)
+3. Google gerará senha de 16 caracteres
+4. Copie para `.env` em `EMAIL_PASSWORD`
+
+**Importante:** NÃO é a senha da sua conta Gmail!
+
+---
+
+## 🧪 Testar Email
+
+### Teste Manual
+
+```python
+from app.services.email_service import enviar_notificacao
+
+resultado = enviar_notificacao(
+    email_destinatario='seu_email@gmail.com',
+    titulo_edital='Mestrado em Computação',
+    link='https://www.ufpa.edu.br/edital-1',
+    palavra_chave='Computação'
+)
+
+if resultado:
+    print("✅ Email enviado com sucesso!")
+else:
+    print("❌ Erro ao enviar email")
+```
+
+### Via Linha de Comando
+
+```bash
+python -c "
+from app.services.email_service import enviar_notificacao
+enviar_notificacao(
+    'seu_email@gmail.com',
+    'Teste PósEmFoco',
+    'https://example.com',
+    'Teste'
+)
+"
+```
+
+---
+
+## ⚠️ Troubleshooting
+
+### SMTPAuthenticationError
+
+**Erro:**
+```
+smtplib.SMTPAuthenticationError: (535, 'Email ou senha incorretos')
+```
+
+**Solução:**
+1. Verifique EMAIL_PASSWORD é a senha de APP (não conta)
+2. Gere nova senha em https://myaccount.google.com/apppasswords
+3. Habilite 2FA no Gmail
+4. Tente novamente
+
+---
+
+### Connection Timeout
+
+**Erro:**
+```
+socket.timeout: _ssl.c:1102: The handshake operation timed out
+```
+
+**Solução:**
+1. Verifique conexão internet
+2. Tente outra rede (Wi-Fi ou dados)
+3. Verificar firewall (porta 587 bloqueada?)
+4. Usar VPN se Gmail bloqueado
+
+---
+
+### Email não chega
+
+**Soluções em ordem:**
+1. Verificar spam/lixeira
+2. Verificar email está correto em BD
+3. Testador manualmente (código acima)
+4. Verificar logs: `journalctl -u posemfoco`
+5. Verificar credenciais Gmail
+
+---
+
+## 🚀 Futuras Melhorias
+
+- [ ] Templates de email dinâmicos
+- [ ] Suporte WhatsApp
+- [ ] Suporte Telegram
+- [ ] Queue de emails (Redis)
+- [ ] Histórico de notificações
+- [ ] Preferências de frequência
+
+---
+
+**Versão:** 1.0.0 | **Última atualização:** 25/01/2026
+"

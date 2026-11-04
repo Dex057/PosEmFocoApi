@@ -4,4 +4,219 @@ Tutorial prático passo a passo para novos usuários do PósEmFoco.
 
 ## 🎯 Objetivo
 
-Neste tutorial você vai:\n1. ✅ Acessar a aplicação\n2. ✅ Criar uma conta\n3. ✅ Definir interesses\n4. ✅ Fazer login\n5. ✅ Receber notificações\n\n**Tempo estimado:** 5 minutos\n\n---\n\n## 📋 Pré-requisitos\n\n- ✅ Servidor rodando (`uvicorn server:app --reload`)\n- ✅ Acesso à http://localhost:8000\n- ✅ Email Gmail funcional\n\nSe não tiver, veja [Instalação](instalacao.md).\n\n---\n\n## 🚀 Passo 1: Acessar a Aplicação\n\n1. Abra seu navegador (Chrome, Firefox, Safari, Edge)\n2. Digite: **http://localhost:8000**\n3. Você verá uma mensagem JSON:\n   ```json\n   {\"mensagem\": \"API PósEmFoco rodando com PostgreSQL\"}\n   ```\n\nPerfeito! Sistema está rodando.\n\n---\n\n## 📝 Passo 2: Ir para Página de Cadastro\n\n1. Digite na barra de endereço:\n   ```\n   http://localhost:8000/frontend/cadastro.html\n   ```\n\n2. Você verá um formulário como este:\n   \n   ```\n   ┌──────────────────────────────┐\n   │   PósEmFoco - Cadastro       │\n   ├──────────────────────────────┤\n   │ Nome Completo:               │\n   │ [_____________________]      │\n   │                              │\n   │ Email:                       │\n   │ [_____________________]      │\n   │                              │\n   │ Senha:                       │\n   │ [_____________________]      │\n   │                              │\n   │ Nível:  [Mestrado ▼]        │\n   │                              │\n   │ Interesses:                  │\n   │ [_____________________]      │\n   │ (ex: Python, IA, ...)        │\n   │                              │\n   │       [Cadastrar]            │\n   └──────────────────────────────┘\n   ```\n\n---\n\n## ✏️ Passo 3: Preencher Formulário\n\n### Nome Completo\n- Digite seu nome completo\n- Exemplo: `João Silva Alves`\n\n### Email\n- **Importante:** Use um email **real e funcional**\n- Você receberá notificações aqui\n- Exemplo: `joao@gmail.com`\n\n### Senha\n- Crie uma senha **forte**\n- Mínimo 6 caracteres\n- Recomendação: `Aluno@2026Ufpa`\n\n### Nível de Educação\n- Selecione o dropdown\n- Opções:\n  - Mestrado\n  - Doutorado\n  - Pós-doutorado\n  - Especialização\n- Exemplo: `Mestrado`\n\n### Interesses\n- Digite palavras-chave separadas por **vírgula**\n- Exemplos:\n  ```\n  Computação, Inteligência Artificial\n  Python, Machine Learning, IA\n  Engenharia, Sistemas Computacionais\n  ```\n\n**Dica:** Quanto mais específicas as palavras, melhor os resultados!\n\n---\n\n## 📤 Passo 4: Enviar Cadastro\n\n1. Clique em **[Cadastrar]**\n2. Aguarde 2-3 segundos\n3. Você verá uma mensagem:\n   ```\n   ✅ Cadastro com sucesso! ID: 1\n   ```\n\n**Parabéns!** Você foi registrado no sistema.\n\n---\n\n## 🔐 Passo 5: Fazer Login\n\n1. Agora acesse:\n   ```\n   http://localhost:8000/frontend/login.html\n   ```\n\n2. Você verá:\n   ```\n   ┌──────────────────────────────┐\n   │   PósEmFoco - Login          │\n   ├──────────────────────────────┤\n   │ Email:                       │\n   │ [_____________________]      │\n   │                              │\n   │ Senha:                       │\n   │ [_____________________]      │\n   │                              │\n   │       [Entrar]               │\n   └──────────────────────────────┘\n   ```\n\n3. Preencha:\n   - **Email:** `joao@gmail.com` (mesmo do cadastro)\n   - **Senha:** `Aluno@2026Ufpa` (mesma do cadastro)\n\n4. Clique em **[Entrar]**\n\n5. Você verá:\n   ```\n   ✅ Login bem-sucedido! Buscando novos editais...\n   ```\n\n---\n\n## 🕷️ Passo 6: Aguardar Scraper\n\n⏳ **O que está acontecendo:**\n\n- Sistema iniciou o scraper em **background**\n- Ele está acessando o site da UFPA\n- Extraindo editais\n- Verificando se correspondem seus interesses\n- Levará **2-3 minutos** para completar\n\n**Não feche a página! Pode abrir outra abinha.**\n\n---\n\n## 📧 Passo 7: Verificar Email\n\n1. Aguarde 3-5 minutos\n2. Abra seu **inbox do Gmail**\n3. Procure por emails de `seu-email@gmail.com` (ou do servidor)\n4. Você pode ver:\n   - 📧 Notificações de editais\n   - ✅ Email de teste (se configurado)\n\n**Se não receber:**\n- Verifique **pasta de Spam**\n- Verifique se Gmail recebeu email\n- Veja [Troubleshooting](../troubleshooting.md#email)\n\n---\n\n## 🎉 Sucesso!\n\nVocê completou o tutorial! 🎓\n\n**Você conseguiu:**\n- ✅ Cadastro na plataforma\n- ✅ Login com credenciais\n- ✅ Ativar monitoramento de editais\n- ✅ Receber notificações por email\n\n---\n\n## 📚 Próximos Passos\n\n1. **Explorar a API:** [API Endpoints](../api/endpoints.md)\n2. **Entender arquitetura:** [Visão Geral](../arquitetura/visao-geral.md)\n3. **Começar a desenvolver:** [Guia de Desenvolvimento](desenvolvimento.md)\n4. **Fazer deploy:** [Guia de Deployment](../deployment.md)\n\n---\n\n## ❓ Dúvidas?\n\nConsulte:\n- [FAQ](../faq.md) - Perguntas frequentes\n- [Troubleshooting](../troubleshooting.md) - Problemas comuns\n- [Documentação Completa](../README.md) - Índice geral\n\n---\n\n**Versão:** 1.0.0 | **Última atualização:** 25/01/2026\n"
+Neste tutorial você vai:
+1. ✅ Acessar a aplicação
+2. ✅ Criar uma conta
+3. ✅ Definir interesses
+4. ✅ Fazer login
+5. ✅ Receber notificações
+
+**Tempo estimado:** 5 minutos
+
+---
+
+## 📋 Pré-requisitos
+
+- ✅ Servidor rodando (`uvicorn server:app --reload`)
+- ✅ Acesso à http://localhost:8000
+- ✅ Email Gmail funcional
+
+Se não tiver, veja [Instalação](instalacao.md).
+
+---
+
+## 🚀 Passo 1: Acessar a Aplicação
+
+1. Abra seu navegador (Chrome, Firefox, Safari, Edge)
+2. Digite: **http://localhost:8000**
+3. Você verá uma mensagem JSON:
+   ```json
+   {"mensagem": "API PósEmFoco rodando com PostgreSQL"}
+   ```
+
+Perfeito! Sistema está rodando.
+
+---
+
+## 📝 Passo 2: Ir para Página de Cadastro
+
+1. Digite na barra de endereço:
+   ```
+   http://localhost:8000/frontend/cadastro.html
+   ```
+
+2. Você verá um formulário como este:
+   
+   ```
+   ┌──────────────────────────────┐
+   │   PósEmFoco - Cadastro       │
+   ├──────────────────────────────┤
+   │ Nome Completo:               │
+   │ [_____________________]      │
+   │                              │
+   │ Email:                       │
+   │ [_____________________]      │
+   │                              │
+   │ Senha:                       │
+   │ [_____________________]      │
+   │                              │
+   │ Nível:  [Mestrado ▼]        │
+   │                              │
+   │ Interesses:                  │
+   │ [_____________________]      │
+   │ (ex: Python, IA, ...)        │
+   │                              │
+   │       [Cadastrar]            │
+   └──────────────────────────────┘
+   ```
+
+---
+
+## ✏️ Passo 3: Preencher Formulário
+
+### Nome Completo
+- Digite seu nome completo
+- Exemplo: `João Silva Alves`
+
+### Email
+- **Importante:** Use um email **real e funcional**
+- Você receberá notificações aqui
+- Exemplo: `joao@gmail.com`
+
+### Senha
+- Crie uma senha **forte**
+- Mínimo 6 caracteres
+- Recomendação: `Aluno@2026Ufpa`
+
+### Nível de Educação
+- Selecione o dropdown
+- Opções:
+  - Mestrado
+  - Doutorado
+  - Pós-doutorado
+  - Especialização
+- Exemplo: `Mestrado`
+
+### Interesses
+- Digite palavras-chave separadas por **vírgula**
+- Exemplos:
+  ```
+  Computação, Inteligência Artificial
+  Python, Machine Learning, IA
+  Engenharia, Sistemas Computacionais
+  ```
+
+**Dica:** Quanto mais específicas as palavras, melhor os resultados!
+
+---
+
+## 📤 Passo 4: Enviar Cadastro
+
+1. Clique em **[Cadastrar]**
+2. Aguarde 2-3 segundos
+3. Você verá uma mensagem:
+   ```
+   ✅ Cadastro com sucesso! ID: 1
+   ```
+
+**Parabéns!** Você foi registrado no sistema.
+
+---
+
+## 🔐 Passo 5: Fazer Login
+
+1. Agora acesse:
+   ```
+   http://localhost:8000/frontend/login.html
+   ```
+
+2. Você verá:
+   ```
+   ┌──────────────────────────────┐
+   │   PósEmFoco - Login          │
+   ├──────────────────────────────┤
+   │ Email:                       │
+   │ [_____________________]      │
+   │                              │
+   │ Senha:                       │
+   │ [_____________________]      │
+   │                              │
+   │       [Entrar]               │
+   └──────────────────────────────┘
+   ```
+
+3. Preencha:
+   - **Email:** `joao@gmail.com` (mesmo do cadastro)
+   - **Senha:** `Aluno@2026Ufpa` (mesma do cadastro)
+
+4. Clique em **[Entrar]**
+
+5. Você verá:
+   ```
+   ✅ Login bem-sucedido!
+   ```
+
+---
+
+## 🕷️ Passo 6: Aguardar Scraper
+
+⏳ **O que está acontecendo:**
+
+- O `worker` roda o scraper em loop (padrão: a cada 60 min); para antecipar, use o botão do painel (`POST /scraper/rodar`)
+- Ele consulta os portais das universidades configuradas
+- Extraindo editais
+- Verificando se correspondem seus interesses
+- Levará **2-3 minutos** para completar
+
+**Não feche a página! Pode abrir outra abinha.**
+
+---
+
+## 📧 Passo 7: Verificar Email
+
+1. Aguarde 3-5 minutos
+2. Abra seu **inbox do Gmail**
+3. Procure por emails de `seu-email@gmail.com` (ou do servidor)
+4. Você pode ver:
+   - 📧 Notificações de editais
+   - ✅ Email de teste (se configurado)
+
+**Se não receber:**
+- Verifique **pasta de Spam**
+- Verifique se Gmail recebeu email
+- Veja [Troubleshooting](../troubleshooting.md#email)
+
+---
+
+## 🎉 Sucesso!
+
+Você completou o tutorial! 🎓
+
+**Você conseguiu:**
+- ✅ Cadastro na plataforma
+- ✅ Login com credenciais
+- ✅ Ativar monitoramento de editais
+- ✅ Receber notificações por email
+
+---
+
+## 📚 Próximos Passos
+
+1. **Explorar a API:** [API Endpoints](../api/endpoints.md)
+2. **Entender arquitetura:** [Visão Geral](../arquitetura/visao-geral.md)
+3. **Começar a desenvolver:** [Guia de Desenvolvimento](desenvolvimento.md)
+4. **Fazer deploy:** [Guia de Deployment](../deployment.md)
+
+---
+
+## ❓ Dúvidas?
+
+Consulte:
+- [FAQ](../faq.md) - Perguntas frequentes
+- [Troubleshooting](../troubleshooting.md) - Problemas comuns
+- [Documentação Completa](../README.md) - Índice geral
+
+---
+
+**Versão:** 1.0.0 | **Última atualização:** 25/01/2026
+"

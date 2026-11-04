@@ -96,10 +96,9 @@ PosEmFoco/
 │   │
 │   ├── services/                     # Lógica de negócio
 │   │   ├── __init__.py
-│   │   ├── scraper.py                # Web scraper
-│   │   ├── email_service.py          # SMTP/Email
-│   │   ├── notificador.py            # Lógica de matching
-│   │   └── base_service.py           # Service base (futuro)
+│   │   ├── scraper.py                # Orquestrador + matching (casa_palavra)
+│   │   ├── scraping/                 # Motores (sigaa, estático, selenium) e fontes.py
+│   │   └── email_service.py          # SMTP/Email
 │   │
 │   └── utils/                        # Utilitários
 │       ├── __init__.py

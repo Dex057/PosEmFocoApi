@@ -23,9 +23,9 @@ PósEmFoco segue uma **arquitetura em camadas** (Layered Architecture), que sepa
                  │ Chama services
 ┌────────────────▼────────────────────────────────┐
 │  Business Logic Layer (app/services/)           │
-│  - scraper.py: extrai dados                     │
+│  - scraper.py: orquestra coleta + matching      │
+│  - scraping/: motores e fontes configuráveis    │
 │  - email_service.py: envia notificações         │
-│  - notificador.py: lógica de matching           │
 └────────────────┬────────────────────────────────┘
                  │ Chama DAOs
 ┌────────────────▼────────────────────────────────┐
@@ -165,9 +165,9 @@ app/
 │   └── __init__.py
 │
 ├── services/                # Lógica de Negócio
-│   ├── scraper.py           # Web scraping
+│   ├── scraper.py           # Orquestrador: fontes, matching (casa_palavra) e notificação
+│   ├── scraping/            # Motores (sigaa, estático, selenium) e fontes.py
 │   ├── email_service.py     # Envio de email
-│   ├── notificador.py       # Matching edital-interesse
 │   └── __init__.py
 │
 ├── utils/                   # Utilitários
@@ -347,19 +347,17 @@ app.add_middleware(
 1. POST /login → validate email/senha
 2. usuarioDAO.buscar_por_email(email) → SELECT usuario
 3. Verificar senha com bcrypt
-4. Inicia background task: executar_scraper()
-5. Retorna { mensagem, usuario }
+4. Gera token de sessão (a coleta roda no worker, não depende do login)
+5. Retorna { mensagem, token, usuario }
 ```
 
 ### Scraper (Background)
 ```
-1. Buscar todos os usuários e seus interesses
-2. Inicializar Selenium
-3. Acessar site UFPA
-4. Extrair editais
-5. Para cada edital:
-   a. Verificar se já existe (SELECT)
-   b. Se novo, INSERT no banco
+1. Buscar todos os interesses (palavra-chave -> e-mails)
+2. Para cada fonte em FONTES, chamar o motor configurado (sigaa, estático ou selenium)
+3. Para cada título coletado, testar casa_palavra() contra as palavras-chave
+4. Em caso de match: INSERT ... ON CONFLICT (link) DO NOTHING
+   (só é "novo" se o INSERT realmente inseriu)
 6. Para cada edital novo:
    a. Buscar usuários interessados
    b. Enviar email (SMTP)

@@ -126,7 +126,7 @@ else:
 
 ### POST /login
 
-Autentica usuário e inicia scraper em background.
+Autentica o usuário e devolve um token de sessão (a coleta roda no `worker`, não no login).
 
 **Request:**
 ```bash
@@ -313,7 +313,7 @@ USUARIO_ID=$(curl -X POST http://localhost:8000/cadastro \
 
 echo "Usuário criado com ID: $USUARIO_ID"
 
-# 2. Login (inicia scraper)
+# 2. Login (devolve o token)
 LOGIN=$(curl -X POST http://localhost:8000/login \
   -H "Content-Type: application/json" \
   -d '{
@@ -323,7 +323,7 @@ LOGIN=$(curl -X POST http://localhost:8000/login \
 
 echo "Login realizado para: $(echo $LOGIN | jq '.usuario.nome')"
 
-# 3. Aguardar scraper executar (2-3 minutos)
+# 3. Aguardar o worker rodar (ou forçar com POST /scraper/rodar)
 sleep 120
 
 # 4. Ver editais

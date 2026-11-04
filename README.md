@@ -24,7 +24,7 @@ O sistema permite que o usuário cadastre palavras-chave (ex: "Enfermagem", "Com
 
 ## 🎯 Visão Geral
 
-PósEmFoco é uma solução inteligente que automatiza o monitoramento de editais acadêmicos. Em vez de os usuários verificarem manualmente o site da UFPA diariamente, o sistema faz isso por eles usando web scraping com Selenium, verifica novos editais contra interesses registrados e envia notificações por e-mail em tempo real.
+PósEmFoco é uma solução inteligente que automatiza o monitoramento de editais acadêmicos. Em vez de os usuários verificarem manualmente os portais de cada universidade, o sistema faz isso por eles usando web scraping (HTML estático, SIGAA e Selenium), verifica novos editais contra interesses registrados e envia notificações por e-mail em tempo real.
 
 ### Fluxo Principal
 
@@ -117,7 +117,7 @@ FonteEdital(
 )
 ```
 
-O orquestrador (`app/services/scraper.py`) itera sobre `FONTES`, despacha para o motor certo (`engine_estatico.py` ou `engine_selenium.py`) e aplica a mesma lógica de deduplicação/notificação para todas as universidades — não há nada específico da UFPA fora do arquivo de configuração.
+O orquestrador (`app/services/scraper.py`) itera sobre `FONTES`, despacha para o motor certo (`engine_estatico.py`, `engine_sigaa.py` ou `engine_selenium.py`) e aplica a mesma lógica de deduplicação/notificação para todas as universidades — não há nada específico da UFPA fora do arquivo de configuração.
 
 ### Adicionando uma nova universidade
 
@@ -890,7 +890,7 @@ Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes
 
 ## 👨‍💻 Autor
 
-Desenvolvido com ❤️ para facilitar a vida dos alunos de pós-graduação da UFPA.
+Desenvolvido com ❤️ para facilitar a vida dos candidatos à pós-graduação nas universidades públicas da Região Norte.
 
 ---
 
