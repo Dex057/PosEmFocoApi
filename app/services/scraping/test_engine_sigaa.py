@@ -45,7 +45,19 @@ def demo():
     # mantém os links distintos (edital.link é UNIQUE no banco).
     assert itens[0][1] != itens[1][1], "links iguais fariam o segundo curso ser descartado"
 
-    print("OK: agrupa processo + curso, guarda o prazo e gera link único por processo.")
+    # Todos os níveis fora do ar precisa virar erro, não "0 processos abertos".
+    from unittest import mock
+    from app.services.scraping import engine_sigaa
+    from app.services.scraping.fontes import FonteEdital
+    fonte = FonteEdital(nome="t", universidade="U", url="https://sigaa.u.br/lista.jsf", engine="sigaa")
+    with mock.patch.object(engine_sigaa.requests, "get", side_effect=ConnectionError("fora do ar")):
+        try:
+            engine_sigaa.coletar(fonte)
+            raise AssertionError("falha em todos os níveis deveria propagar")
+        except ConnectionError:
+            pass
+
+    print("OK: agrupa processo + curso, guarda o prazo, gera link único e não mascara portal fora do ar.")
 
 
 if __name__ == "__main__":

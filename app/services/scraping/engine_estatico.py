@@ -1,8 +1,12 @@
 import logging
 import re
+import tempfile
+from pathlib import Path
 from urllib.parse import urljoin
 
+import certifi
 import requests
+import urllib3.util.connection
 from bs4 import BeautifulSoup
 
 from app.services.scraping.fontes import FonteEdital
@@ -10,6 +14,24 @@ from app.services.scraping.fontes import FonteEdital
 logger = logging.getLogger(__name__)
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; PosEmFocoBot/1.0)"}
+
+# ponytail: IPv4 apenas. O urllib3 tenta o IPv6 primeiro e não cai para o IPv4 antes do
+# timeout (~21 s por requisição na UFRR, cujo IPv6 não responde). Todo portal tem IPv4.
+# Vale para todo uso do requests no processo; desfaça se algum dia surgir fonte só IPv6.
+urllib3.util.connection.HAS_IPV6 = False
+
+# Vários portais .edu.br (UFRR, UFRA...) não enviam o certificado intermediário da RNP, e o
+# requests recusa a conexão. Em vez de desligar a verificação, somamos esse intermediário
+# (intermediarios.pem, conferido contra a raiz GlobalSign do certifi) às CAs padrão.
+# Um arquivo por processo, para dois processos não escreverem o mesmo ao mesmo tempo.
+with tempfile.NamedTemporaryFile("w", suffix=".pem", delete=False, encoding="utf-8") as _f:
+    _f.write(Path(certifi.where()).read_text(encoding="utf-8"))
+    _f.write(Path(__file__).with_name("intermediarios.pem").read_text(encoding="utf-8"))
+CA_BUNDLE = _f.name
+
+
+def verificacao_ssl(fonte: FonteEdital):
+    return CA_BUNDLE if fonte.verificar_ssl else False
 
 
 def extrair_itens(
@@ -40,7 +62,7 @@ def coletar(fonte: FonteEdital) -> list[tuple[str, str]]:
     pagina = 1
 
     while url_atual and pagina <= fonte.max_paginas:
-        resp = requests.get(url_atual, headers=HEADERS, timeout=20, verify=fonte.verificar_ssl)
+        resp = requests.get(url_atual, headers=HEADERS, timeout=20, verify=verificacao_ssl(fonte))
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
 

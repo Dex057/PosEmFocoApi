@@ -14,7 +14,7 @@ from app.dao.interesse_dao import InteresseDAO
 from app.dao.edital_dao import EditalDAO
 from app.dao.sessao_dao import SessaoDAO
 from app.utils.db import get_connection
-from app.services.scraper import executar_scraper
+from app.services.scraper import executar_scraper, casa_palavra
 
 app = FastAPI(title="PósEmFoco")
 
@@ -186,7 +186,11 @@ def listar_meus_editais(usuario_id: int = Depends(usuario_logado)):
     palavras = interesse_dao.listar_por_usuario(usuario_id)
     if not palavras:
         return []
-    return edital_dao.listar_por_palavras(palavras)
+    # O ILIKE do DAO pré-filtra no banco; aqui fica só a palavra inteira, o mesmo
+    # critério do e-mail (senão "ia" traz todo edital com "Amazônia" no título).
+    palavras = [p.lower() for p in palavras]
+    return [e for e in edital_dao.listar_por_palavras(palavras)
+            if any(casa_palavra(p, e['titulo'].lower()) for p in palavras)]
 
 @app.get("/me/interesses")
 def listar_meus_interesses(usuario_id: int = Depends(usuario_logado)):

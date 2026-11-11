@@ -1,9 +1,8 @@
 """Gera as métricas do TCC: cobertura/tempo/falha por fonte e falsos positivos (substring x palavra inteira).
 
-Rodar: python avaliar.py [--selenium]   (sem a flag, pula fontes que precisam de navegador)
+Rodar: python avaliar.py
 Não toca no banco nem envia e-mail.
 """
-import sys
 import time
 
 from app.services.scraper import ENGINES, casa_palavra
@@ -15,19 +14,17 @@ PALAVRAS = ["ia", "ti", "social", "saúde", "computação", "engenharia", "educa
 
 
 def main():
-    com_selenium = "--selenium" in sys.argv
     titulos = {}  # link -> titulo (dedup entre fontes)
     print("| Fonte | Motor | Itens | Tempo (s) | Resultado |\n|---|---|---|---|---|")
-    ok = falha = 0
+    ok = vazia = falha = 0
     for f in FONTES:
-        if f.engine == "selenium" and not com_selenium:
-            print(f"| {f.nome} | {f.engine} | - | - | pulada (navegador) |")
-            continue
         t0 = time.time()
         try:
             itens = ENGINES[f.engine](f)
-            res = "ok" if itens else "0 itens (seletor/página)"
-            ok += bool(itens); falha += not itens
+            # Os motores levantam erro quando a conexão falha; 0 itens com resposta normal é
+            # portal sem edital no momento (ex.: SIGAA sem processo aberto) ou seletor quebrado.
+            res = "ok" if itens else "vazia (conferir seletor)"
+            ok += bool(itens); vazia += not itens
             for t, l in itens:
                 titulos[l] = t
         except Exception as e:
@@ -35,7 +32,7 @@ def main():
             falha += 1
         print(f"| {f.nome} | {f.engine} | {len(itens)} | {time.time() - t0:.1f} | {res} |")
 
-    print(f"\nFontes com sucesso: {ok}; com falha/vazias: {falha}; títulos únicos (por link): {len(titulos)}\n")
+    print(f"\nFontes com itens: {ok}; vazias: {vazia}; com falha: {falha}; títulos únicos (por link): {len(titulos)}\n")
 
     baixos = [t.lower() for t in titulos.values()]
     print("| Palavra | Substring | Palavra inteira | Falsos positivos evitados |\n|---|---|---|---|")

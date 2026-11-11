@@ -14,6 +14,7 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
+from app.services.scraping.engine_estatico import verificacao_ssl
 from app.services.scraping.fontes import FonteEdital
 
 logger = logging.getLogger(__name__)
@@ -68,17 +69,22 @@ def extrair_itens(soup: BeautifulSoup, url_base: str) -> list[tuple[str, str]]:
 
 def coletar(fonte: FonteEdital) -> list[tuple[str, str]]:
     itens: list[tuple[str, str]] = []
+    erros = []
 
     for nivel in NIVEIS:
         separador = "&" if "?" in fonte.url else "?"
         url = f"{fonte.url}{separador}nivel={nivel}"
         try:
-            resp = requests.get(url, headers=HEADERS, timeout=30, verify=fonte.verificar_ssl)
+            resp = requests.get(url, headers=HEADERS, timeout=30, verify=verificacao_ssl(fonte))
             resp.raise_for_status()
         except Exception as e:
             logger.warning(f"SIGAA {fonte.universidade} nível {nivel} falhou: {e}")
+            erros.append(e)
             continue
 
         itens.extend(extrair_itens(BeautifulSoup(resp.text, "html.parser"), url))
 
+    # Um nível fora do ar é tolerável; todos fora não é "nenhum processo aberto", é falha.
+    if len(erros) == len(NIVEIS):
+        raise erros[-1]
     return itens

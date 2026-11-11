@@ -5,15 +5,16 @@ from app.dao.edital_dao import EditalDAO
 from app.utils.db import get_connection
 from app.services.email_service import enviar_notificacao
 from app.services.scraping.fontes import FONTES
-from app.services.scraping import engine_selenium, engine_estatico, engine_sigaa
+from app.services.scraping import engine_estatico, engine_sigaa, engine_wordpress, engine_plone
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - [Scraper] - %(message)s')
 logger = logging.getLogger(__name__)
 
 ENGINES = {
-    "selenium": engine_selenium.coletar,
     "estatico": engine_estatico.coletar,
     "sigaa": engine_sigaa.coletar,
+    "wordpress": engine_wordpress.coletar,
+    "plone": engine_plone.coletar,
 }
 
 
