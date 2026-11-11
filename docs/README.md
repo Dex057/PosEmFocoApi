@@ -77,7 +77,7 @@ Bem-vindo à documentação técnica completa do **PósEmFoco**. Este é o ponto
 Frontend:     HTML5 + CSS3 + JavaScript
 Backend:      Python 3.10+ (FastAPI)
 Database:     PostgreSQL 12+
-Scraping:     Selenium + WebDriver Manager
+Scraping:     requests + BeautifulSoup (SIGAA, HTML, API do WordPress)
 Auth:         bcrypt + passlib
 Email:        SMTP (Gmail)
 Deploy:       Uvicorn + systemd/Docker

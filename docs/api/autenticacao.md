@@ -1,3 +1,58 @@
-# 🔐 Autenticação na API\n\nGuia completo sobre como autenticar requisições à API do PósEmFoco.
+# 🔐 Autenticação
 
-## 📋 Visão Geral\n\nAutenticação = Provar que você é quem diz ser\n\nPósEmFoco usa:\n- **Atualmente:** Validação de email/senha (básico)\n- **Futuro:** JWT tokens (mais seguro)\n\n---\n\n## 📝 Endpoints Públicos vs Privados\n\n### Públicos (Sem Autenticação)\n\n```\nGET /                # Status da API\nPOST /cadastro       # Registrar novo usuário\nPOST /login          # Fazer login\n```\n\n### Privados (Com Autenticação - Futuro)\n\n```\nGET /usuario/1       # Dados do usuário\nPOST /usuario/1      # Atualizar usuário\nDELETE /usuario/1    # Deletar conta\nGET /editais         # Ver editais personalizados\n```\n\n---\n\n## 🔑 Fluxo Atual (Sem JWT)\n\n```\n1. Cliente faz POST /login\n   └─ Envia email + senha\n   \n2. Servidor verifica\n   └─ SELECT no BD\n   └─ Valida senha com bcrypt\n   \n3. Se OK:\n   └─ Retorna dados do usuário\n   └─ Frontend armazena info\n   \n4. Requisições futuras:\n   └─ Frontend envia email como identidade\n   └─ Backend valida BD\n```\n\n---\n\n## 🚀 Fluxo Futuro (Com JWT)\n\nJWT = JSON Web Token\n\n```\n1. Cliente faz POST /login\n   └─ Envia email + senha\n   \n2. Servidor valida\n   └─ Se OK, gera JWT token\n   └─ Retorna token ao cliente\n   \n3. Cliente armazena token\n   └─ Salva em localStorage\n   \n4. Requisições privadas:\n   ├─ Header: Authorization: Bearer token123\n   └─ Servidor valida token\n   \n5. Token expira\n   └─ Cliente precisa fazer login novamente\n```\n\n### Exemplo JWT\n\n```\neyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\neyJzdWIiOiIxIiwibmFtZSI6Ikpvw6NvIiwiaWF0IjoxNTE2MjM5MDIyfQ.\nSflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\n```\n\nFormato: `header.payload.signature`\n\n---\n\n## 💻 Exemplo: Usando API\n\n### Login\n\n```bash\n# 1. Fazer login\ncurl -X POST http://localhost:8000/login \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"email\": \"joao@example.com\",\n    \"senha\": \"Aluno@2026\"\n  }'\n\n# Resposta:\n# {\n#   \"mensagem\": \"Login realizado com sucesso\",\n#   \"usuario\": {\n#     \"id\": 1,\n#     \"nome\": \"João\",\n#     \"email\": \"joao@example.com\"\n#   }\n# }\n```\n\n### Usar Dados (Frontend)\n\n```javascript\n// Salvar após login\nconst response = await fetch('/login', {\n    method: 'POST',\n    headers: {'Content-Type': 'application/json'},\n    body: JSON.stringify({email, senha})\n});\n\nconst data = await response.json();\n\n// Armazenar ID do usuário\nlocalStorage.setItem('usuario_id', data.usuario.id);\nlocalStorage.setItem('usuario_email', data.usuario.email);\n\n// Usar depois\nconst usuarioId = localStorage.getItem('usuario_id');\nconst usuarioEmail = localStorage.getItem('usuario_email');\n```\n\n---\n\n## 🛡️ Segurança\n\n### ✅ Implementado\n\n- ✅ Senhas com bcrypt (hash irreversível)\n- ✅ SQL injection prevenida (prepared statements)\n- ✅ Validação de input (Pydantic)\n- ✅ HTTPS em produção\n\n### ⚠️ Não Implementado (Futuro)\n\n- ❌ JWT tokens (sessão stateless)\n- ❌ Rate limiting (brute force)\n- ❌ 2FA (autenticação dupla)\n- ❌ Refresh tokens\n- ❌ API keys\n\n---\n\n## 📚 Próximos Passos\n\n- [API Endpoints](endpoints.md) - Ver todos endpoints\n- [Deployment](../deployment.md) - SSL/HTTPS em produção\n- [Troubleshooting](../troubleshooting.md) - Erros de autenticação\n\n---\n\n**Versão:** 1.0.0 | **Última atualização:** 25/01/2026\n"
+O PósEmFoco usa **sessão por token opaco** guardado no Postgres. Não há JWT.
+
+## Fluxo
+
+```
+1. POST /cadastro  {nome, email, senha, nivel_graduacao, interesses[]}
+   └─ senha < 6 caracteres → 400; e-mail repetido → 400
+   └─ senha vira hash bcrypt (passlib) antes de ir para a tabela usuario
+
+2. POST /login  {email, senha}
+   └─ confere o hash com bcrypt
+   └─ gera token = secrets.token_urlsafe(32)
+   └─ grava (token, usuario_id) na tabela sessao
+   └─ responde {token, usuario: {id, nome, email, nivel_graduacao}}
+
+3. Rotas privadas: header  Authorization: Bearer <token>
+   └─ a dependência usuario_logado() busca o token em sessao
+   └─ token ausente ou desconhecido → 401 "Sessão expirada. Faça login novamente."
+
+4. POST /logout  (mesmo header)
+   └─ apaga o token da tabela sessao
+```
+
+Por a sessão ficar no banco, e não na memória do processo, ela sobrevive a restart e vale
+para qualquer instância da API atrás do mesmo Postgres.
+
+## Rotas
+
+| Rota | Autenticação |
+|---|---|
+| `GET /`, `GET /health` | pública |
+| `POST /cadastro`, `POST /login`, `POST /logout` | pública |
+| `GET /editais`, `POST /editais` | pública |
+| `GET /me/editais` | token |
+| `GET /me/interesses`, `PUT /me/interesses` | token |
+| `POST /scraper/rodar` | token |
+
+## Exemplo
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8000/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"aluno@exemplo.com","senha":"segredo123"}' | python -c "import sys,json;print(json.load(sys.stdin)['token'])")
+
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/me/editais
+```
+
+No front (`frontend/app.js`), a resposta do login fica em `localStorage['sessao']` e todo
+`fetch` manda o header `Authorization`. Ao receber 401, o front limpa a sessão e volta ao login.
+
+## Limitações conhecidas
+
+- O token **não expira**: vale até o logout. A coluna `sessao.criado_em` já existe para um
+  vencimento futuro (ex.: `DELETE FROM sessao WHERE criado_em < now() - interval '30 days'`).
+- `POST /editais` é público. É usado para testes; em produção convém protegê-lo.
+- Sem limite de tentativas no `/login`.

@@ -9,7 +9,6 @@ Antes de começar, certifique-se de ter:
 - **Git** - Para clonar o repositório
 - **Python 3.10+** - Linguagem principal
 - **PostgreSQL 12+** - Banco de dados
-- **Google Chrome** - Para web scraping
 - **pip** - Gerenciador de pacotes Python
 - **Terminal/CMD** - Acesso à linha de comando
 
@@ -76,16 +75,7 @@ GRANT ALL PRIVILEGES ON DATABASE posemfoco TO posemfoco_user;
 \q
 ```
 
-#### 5. Instale Google Chrome
-```bash
-# Instalar Chrome
-sudo apt install -y google-chrome-stable
-
-# Verificar instalação
-google-chrome --version
-```
-
-#### 6. Clone o Repositório
+#### 5. Clone o Repositório
 ```bash
 # Criar diretório para projetos (opcional)
 mkdir -p ~/projetos
@@ -96,7 +86,7 @@ git clone https://github.com/seu-usuario/PosEmFoco.git
 cd PosEmFoco
 ```
 
-#### 7. Configure Ambiente Virtual Python
+#### 6. Configure Ambiente Virtual Python
 ```bash
 # Criar ambiente virtual
 python3 -m venv venv
@@ -107,7 +97,7 @@ source venv/bin/activate
 # Você verá (venv) no início da linha de comando
 ```
 
-#### 8. Instale Dependências
+#### 7. Instale Dependências
 ```bash
 # Atualizar pip
 pip install --upgrade pip
@@ -119,7 +109,7 @@ pip install -r requirements.txt
 pip list
 ```
 
-#### 9. Configure Variáveis de Ambiente
+#### 8. Configure Variáveis de Ambiente
 ```bash
 # Criar arquivo .env na raiz do projeto
 nano .env
@@ -144,7 +134,7 @@ ENVIRONMENT=development
 
 Salve com `Ctrl+O`, Enter, `Ctrl+X`
 
-#### 10. Inicialize Banco de Dados
+#### 9. Inicialize Banco de Dados
 ```bash
 # Criar tabelas
 python criar_tabelas.py
@@ -153,7 +143,7 @@ python criar_tabelas.py
 psql -U posemfoco_user -d posemfoco -c "\dt"
 ```
 
-#### 11. Inicie o Servidor
+#### 10. Inicie o Servidor
 ```bash
 # Ativar ambiente virtual (se não estiver ativo)
 source venv/bin/activate
@@ -206,16 +196,7 @@ psql postgres
 # Execute os comandos SQL (mesmo do Linux, veja acima)
 ```
 
-#### 5. Instale Google Chrome
-```bash
-# Instalar Chrome
-brew install google-chrome
-
-# Verificar
-google-chrome --version
-```
-
-#### 6. Clone e Configure (mesmo do Linux, passos 6-11)
+#### 5. Clone e Configure (mesmo do Linux, passos 5-10)
 
 ```bash
 # Clone
@@ -229,7 +210,7 @@ source venv/bin/activate
 # Dependências
 pip install -r requirements.txt
 
-# .env (ver Linux, passo 9)
+# .env (ver Linux, passo 8)
 
 # Banco
 python criar_tabelas.py
@@ -284,12 +265,7 @@ Abra `pgAdmin` (ícone na área de trabalho) e crie:
 - Database: `posemfoco`
 - User: `posemfoco_user` (com senha)
 
-##### 4. Instale Google Chrome
-- Baixe: https://www.google.com/chrome/
-- Execute instalador
-- Verifique no "Programas e Recursos"
-
-##### 5. Clone Repositório
+##### 4. Clone Repositório
 
 ```cmd
 # Abra Command Prompt
@@ -297,7 +273,7 @@ git clone https://github.com/seu-usuario/PosEmFoco.git
 cd PosEmFoco
 ```
 
-##### 6. Ambiente Virtual
+##### 5. Ambiente Virtual
 ```cmd
 python -m venv venv
 venv\Scripts\activate
@@ -305,13 +281,13 @@ venv\Scripts\activate
 # Você verá (venv) no prompt
 ```
 
-##### 7. Dependências
+##### 6. Dependências
 ```cmd
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-##### 8. Configure .env
+##### 7. Configure .env
 
 Crie arquivo `.env` na raiz do projeto (use Notepad):
 ```env
@@ -327,12 +303,12 @@ EMAIL_PASSWORD=senha_de_app
 ENVIRONMENT=development
 ```
 
-##### 9. Inicialize BD
+##### 8. Inicialize BD
 ```cmd
 python criar_tabelas.py
 ```
 
-##### 10. Inicie Servidor
+##### 9. Inicie Servidor
 ```cmd
 uvicorn server:app --reload
 ```
@@ -357,16 +333,7 @@ psql -U posemfoco_user -d posemfoco -c "SELECT 1;"
 # Windows (use pgAdmin ou Command Line)
 ```
 
-### 3. Teste Chrome
-```bash
-# Linux/Mac
-google-chrome --version
-
-# Windows
-# Procure por "Google Chrome" no menu Iniciar
-```
-
-### 4. Teste Servidor
+### 3. Teste Servidor
 ```bash
 # Com ambiente virtual ativo
 uvicorn server:app --reload
@@ -378,7 +345,7 @@ uvicorn server:app --reload
 
 Acesse: http://localhost:8000 (deve exibir JSON com mensagem)
 
-### 5. Teste Banco de Dados
+### 4. Teste Banco de Dados
 ```bash
 # Deve listar as 3 tabelas criadas
 psql -U posemfoco_user -d posemfoco -c "\dt"

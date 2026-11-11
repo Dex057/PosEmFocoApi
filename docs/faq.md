@@ -63,7 +63,6 @@ Mas para desenvolvimento local, não precisa.
 2. **Windows Nativo:**
    - Python 3.10+
    - PostgreSQL
-   - Google Chrome
    - Siga guia Windows
 
 Veja [Instalação](guias/instalacao.md) para detalhes.
@@ -196,11 +195,8 @@ As fontes de `app/services/scraping/fontes.py` (páginas públicas, sem login):
 
 ### Por que demora para atualizar?
 
-Uma rodada completa leva cerca de 45 s (medido em `docs/tcc/resultados.md`, sem a fonte Selenium):
-- 2-3s: inicializar navegador
-- 5-10s: acessar site
-- 5-10s: extrair dados
-- 5-10s: processar + notificar
+Uma rodada completa das 17 fontes leva cerca de 40 s (medido em `docs/tcc/resultados.md`):
+de 1 a 5 s por fonte, quase tudo esperando a resposta do portal.
 
 Roda no `worker`, em loop, sem depender de login (e sob demanda em `POST /scraper/rodar`).
 
@@ -238,7 +234,7 @@ Veja [Guia de Desenvolvimento](guias/desenvolvimento.md#como-contribuir) para de
 Frontend:    HTML5, CSS3, JavaScript
 Backend:     Python 3.10+, FastAPI
 BD:          PostgreSQL 12+
-Scraping:    Selenium + WebDriver Manager
+Scraping:    requests + BeautifulSoup (SIGAA, HTML, API do WordPress)
 Email:       SMTP (Gmail)
 Auth:        bcrypt (passlib)
 ```

@@ -10,7 +10,7 @@ worker.py (loop a cada INTERVALO_SCRAPER_MINUTOS)
    └─ executar_scraper()                         app/services/scraper.py
         1. _buscar_interesses()   palavra-chave -> [e-mails]   (se vazio, encerra)
         2. para cada FonteEdital em FONTES:
-             coletar = ENGINES[fonte.engine]     sigaa | estatico | selenium
+             coletar = ENGINES[fonte.engine]     sigaa | estatico | wordpress | plone
              itens   = coletar(fonte)            lista de (título, link)
              _processar_itens(...)
         3. _processar_itens:
@@ -32,10 +32,15 @@ O orquestrador não tem nada específico de instituição.
 |---|---|---|
 | `sigaa` | Instituições com SIGAA (`/sigaa/public/processo_seletivo/lista.jsf`) | `requests` + BeautifulSoup; lê curso, vagas e período de inscrição; um link único por curso |
 | `estatico` | Portais cuja lista já vem no HTML | `requests` + BeautifulSoup com seletor CSS e paginação |
-| `selenium` | Portais que montam a lista por JavaScript (hoje, UFPA - Editais) | Chromium headless |
+| `wordpress` | Portais WordPress que expõem `/wp-json/wp/v2/posts` (UFOPA, UNIFAP, UFRR, UEA, UERR) | `requests` na API REST nativa; JSON, sem seletor CSS; pagina até a última página |
+| `plone` | Portais Plone com a API `@search` (UFAC, IFAC) | `requests` com `Accept: application/json`; pagina por `b_start` (o link `next` do Plone pode vir com caminho interno quebrado) |
 
 Verificar se as fontes continuam de pé: `python -m app.services.scraping.fontes`
-(0 itens = seletor quebrou ou portal mudou; no SIGAA, 0 itens também pode ser "nenhum processo aberto").
+(0 itens = seletor quebrou ou portal mudou; no SIGAA, 0 itens também pode ser "nenhum processo aberto" — se todos os níveis falharem, o motor levanta erro em vez de devolver vazio).
+
+Rede: as conexões usam um bundle de CAs com o intermediário da RNP (`intermediarios.pem`), que
+vários portais .edu.br não enviam, e só IPv4 (o IPv6 de alguns portais não responde e custava
+~20 s por requisição).
 
 ## Casamento de palavra-chave
 

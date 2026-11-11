@@ -55,11 +55,9 @@ EMAIL_ADDRESS=seu_email@gmail.com           # Seu email
 EMAIL_PASSWORD=xyzabc123def456ghi           # Senha de app (NÃO a senha da conta!)
 
 # ============================================
-# SCRAPER - Selenium
+# SCRAPER
 # ============================================
-CHROME_OPTIONS=--headless --disable-gpu     # Opções do Chrome headless
-SCRAPER_TIMEOUT=30                          # Timeout em segundos
-SCRAPER_RETRY_COUNT=3                       # Tentativas de retry
+INTERVALO_SCRAPER_MINUTOS=60                # Intervalo entre rodadas do worker
 
 # ============================================
 # APLICAÇÃO
@@ -117,18 +115,9 @@ EMAIL_PASSWORD=xyzabc123def456ghi
 
 #### Scraper
 ```env
-CHROME_OPTIONS=--headless --disable-gpu
-# --headless: executa sem abrir janela do navegador
-# --disable-gpu: desativa aceleração de GPU
-# --no-sandbox: necessário em alguns ambientes Linux
-# Para modo debug (ver navegador): retire --headless
-
-SCRAPER_TIMEOUT=30
-# Tempo máximo em segundos para cada página carregar
-# Aumente se site for lento
-
-SCRAPER_RETRY_COUNT=3
-# Número de tentativas se falhar
+INTERVALO_SCRAPER_MINUTOS=60
+# Minutos entre uma rodada e outra do worker.py.
+# O timeout por requisição (20-30 s) fica no código de cada motor.
 ```
 
 ---
@@ -394,7 +383,6 @@ ENVIRONMENT=development
 DEBUG=true
 LOG_LEVEL=DEBUG
 DB_HOST=localhost
-CHROME_OPTIONS=--headless --disable-gpu --no-sandbox
 ```
 
 ### Staging (teste em servidor)
@@ -403,7 +391,6 @@ ENVIRONMENT=staging
 DEBUG=false
 LOG_LEVEL=INFO
 DB_HOST=db.staging.exemplo.com
-CHROME_OPTIONS=--headless --disable-gpu --no-sandbox
 ```
 
 ### Produção
@@ -412,7 +399,6 @@ ENVIRONMENT=production
 DEBUG=false
 LOG_LEVEL=WARNING
 DB_HOST=db.prod.exemplo.com
-CHROME_OPTIONS=--headless --disable-gpu --no-sandbox --disable-dev-shm-usage
 ```
 
 ---

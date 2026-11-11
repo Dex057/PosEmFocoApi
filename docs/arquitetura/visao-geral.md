@@ -166,7 +166,7 @@ app/
 │
 ├── services/                # Lógica de Negócio
 │   ├── scraper.py           # Orquestrador: fontes, matching (casa_palavra) e notificação
-│   ├── scraping/            # Motores (sigaa, estático, selenium) e fontes.py
+│   ├── scraping/            # Motores (sigaa, estático, wordpress, plone) e fontes.py
 │   ├── email_service.py     # Envio de email
 │   └── __init__.py
 │
@@ -314,12 +314,12 @@ app.add_middleware(
 - ✅ Open source
 - ✅ Excelente para produção
 
-### Por que Selenium?
+### Por que sem navegador (sem Selenium)?
 
-- ✅ Simula navegador real
-- ✅ JavaScript é executado
-- ✅ Handles dinâmico
-- ✅ Suporta paginação
+- ✅ Toda fonte atual entrega os dados em HTML ou JSON; a UFPA, que parecia exigir navegador, só barrava requisição sem User-Agent
+- ✅ Portais WordPress expõem `/wp-json`: JSON estável, sem seletor CSS
+- ✅ Imagem Docker sem Chromium: menor e mais rápida de buildar
+- ✅ Página montada por JavaScript quase sempre busca os dados numa chamada interna (XHR), que dá para usar direto
 
 ---
 
@@ -354,7 +354,7 @@ app.add_middleware(
 ### Scraper (Background)
 ```
 1. Buscar todos os interesses (palavra-chave -> e-mails)
-2. Para cada fonte em FONTES, chamar o motor configurado (sigaa, estático ou selenium)
+2. Para cada fonte em FONTES, chamar o motor configurado (sigaa, estático, wordpress ou plone)
 3. Para cada título coletado, testar casa_palavra() contra as palavras-chave
 4. Em caso de match: INSERT ... ON CONFLICT (link) DO NOTHING
    (só é "novo" se o INSERT realmente inseriu)

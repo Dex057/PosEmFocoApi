@@ -16,10 +16,8 @@ Guia completo para colocar PósEmFoco em produção.
 
 ## ✅ Checklist Pré-Deploy
 
-- [ ] Todos os testes passam (`pytest`)
+- [ ] Checagens passam: `python test_api.py` e `python -m app.services.test_match`
 - [ ] Sem console.log() ou print() desnecessários
-- [ ] DEBUG=false no .env
-- [ ] SECRET_KEY alterada (não usar padrão)
 - [ ] Senhas do BD e email configuradas
 - [ ] CORS restringido (não use `*` em produção)
 - [ ] Documentação atualizada

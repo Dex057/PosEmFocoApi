@@ -6,7 +6,7 @@ Solução de problemas detalhada para desenvolvimento e produção.
 1. [Problemas de Instalação](#problemas-de-instalação)
 2. [Problemas de Banco de Dados](#problemas-de-banco-de-dados)
 3. [Problemas de API/FastAPI](#problemas-de-apifastapi)
-4. [Problemas de Selenium/Scraper](#problemas-de-selenium-scraper)
+4. [Problemas do Scraper](#problemas-do-scraper)
 5. [Problemas de Email](#problemas-de-email)
 6. [Problemas de Produção](#problemas-de-produção)
 
@@ -323,98 +323,72 @@ curl -X POST http://localhost:8000/cadastro \
 
 ---
 
-## 🕷️ Problemas de Selenium/Scraper
+## 🕷️ Problemas do Scraper
 
-### ChromeDriver não encontrado
+Primeiro passo sempre: `python -m app.services.scraping.fontes` (mostra itens por fonte) ou
+`python avaliar.py` (tabela com tempo e FALHOU/ok).
 
-**Erro:**
-```
-selenium.common.exceptions.WebDriverException: unknown error: Chrome failed to start
-```
+### Fonte devolve 0 itens
+
+**Causa:** o portal mudou o layout e o `seletor_item` não casa mais.
 
 **Solução:**
 ```bash
-# Instalar Chrome
-sudo apt install google-chrome-stable  # Linux
-brew install google-chrome  # Mac
+# Baixe a página como o motor baixa (com User-Agent) e procure o link de um edital
+curl -s -A "Mozilla/5.0 (compatible; PosEmFocoBot/1.0)" "<url da fonte>" -o pagina.html
+```
+Ajuste o seletor em `fontes.py` e rode o verificador de novo. No SIGAA, 0 itens pode ser só
+"nenhum processo aberto"; se todos os níveis falharem, o motor levanta erro (não devolve vazio).
 
-# Reinstalar webdriver-manager
-pip install --upgrade webdriver-manager
+---
 
-# Ou especificar caminho
-from selenium.webdriver.chrome.service import Service
-service = Service('/usr/bin/google-chrome')
-driver = webdriver.Chrome(service=service)
+### HTTP 403 Forbidden
+
+**Causa:** alguns portais (ex.: UFPA) recusam requisição sem User-Agent.
+
+**Solução:** os motores já mandam `HEADERS` de `engine_estatico.py`. Se uma fonte nova
+der 403 mesmo assim, compare com `curl -A "Mozilla/5.0" <url>`; captcha ou anti-bot (IFAM)
+não tem solução simples e a fonte fica de fora, anotada no fim de `fontes.py`.
+
+---
+
+### `SSLError: certificate verify failed: unable to get local issuer certificate`
+
+**Causa:** o servidor não envia o certificado intermediário (comum em .edu.br com a CA da RNP).
+
+**Solução:** os intermediários conhecidos ficam em `app/services/scraping/intermediarios.pem`.
+Para outra CA:
+```bash
+# URL do intermediário que falta
+openssl s_client -connect host:443 -servername host </dev/null | openssl x509 -noout -ext authorityInfoAccess
+# Baixe, converta para PEM, confira contra as raízes do certifi e acrescente ao arquivo
+openssl x509 -inform DER -in inter.crt -out inter.pem
+openssl verify -CAfile "$(python -c 'import certifi;print(certifi.where())')" inter.pem
+```
+`verificar_ssl=False` na fonte é a última saída.
+
+---
+
+### Uma fonte leva ~20 s por página
+
+**Causa:** o portal anuncia IPv6 que não responde, e o cliente espera o timeout antes do IPv4.
+
+**Solução:** a coleta já força IPv4 (`urllib3.util.connection.HAS_IPV6 = False` em
+`engine_estatico.py`). Se voltar a acontecer, confira com:
+```bash
+python -c "import socket;print(socket.getaddrinfo('host',443))"
 ```
 
 ---
 
-### TimeoutException ao extrair elementos
+### Lista só aparece depois do JavaScript
 
-**Erro:**
-```
-selenium.common.exceptions.TimeoutException: Message: Timeout waiting for element
-```
+**Causa:** a página monta a lista no navegador. O projeto não usa navegador headless.
 
-**Solução:**
-```python
-# Aumentar timeout (padrão 10s)
-from selenium.webdriver.support.ui import WebDriverWait
-
-# De:
-WebDriverWait(driver, 10).until(EC.presence_of_element_located(...))
-
-# Para:
-WebDriverWait(driver, 30).until(EC.presence_of_element_located(...))
-
-# Ou adicionar espera
-import time
-time.sleep(3)  # Aguardar JS carregar
-```
-
----
-
-### Seletor CSS/XPath errado
-
-**Erro:**
-```
-selenium.common.exceptions.NoSuchElementException: no such element
-```
-
-**Solução:**
-```python
-# 1. Verificar seletor no navegador (F12)
-# 2. Usar inspect element para copiar XPath correto
-# 3. Testar seletor antes
-
-driver = ...
-elementos = driver.find_elements(By.CLASS_NAME, "edital-item")
-print(f"Encontrados: {len(elementos)} elementos")
-
-# Se 0, seletor está errado!
-```
-
----
-
-### Site bloqueia scraper
-
-**Erro:**
-```
-403 Forbidden ou captcha aparece
-```
-
-**Solução:**
-```python
-# Adicionar delay entre requisições
-import time
-time.sleep(2)  # 2 segundos entre páginas
-
-# Adicionar headers realistas
-options = webdriver.ChromeOptions()
-options.add_argument(
-    "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
-)
-```
+**Solução:** abra o DevTools (F12) → aba Rede → recarregue e procure a chamada XHR/JSON que
+traz os itens. Se o portal for WordPress, teste `https://<site>/wp-json/wp/v2/posts?search=edital`
+e use `engine="wordpress"`. Se for Plone, teste
+`curl -H "Accept: application/json" "https://<site>/@search?SearchableText=edital"` e use `engine="plone"`.
 
 ---
 
@@ -625,7 +599,7 @@ pip cache purge
 4. **Verificar permissões** - Arquivos, diretórios, BD
 5. **Revisar configuração** - `.env`, systemd, nginx
 6. **Procurar em Google** - Copiar mensagem de erro exato
-7. **Documentação oficial** - FastAPI, Selenium, PostgreSQL
+7. **Documentação oficial** - FastAPI, requests, PostgreSQL
 8. **Stack Overflow** - Procurar problema similar
 9. **Testes unitários** - `pytest` para isolar problema
 10. **Pedir ajuda** - GitHub Issues ou comunidades
@@ -635,7 +609,7 @@ pip cache purge
 ## 📚 Recursos
 
 - [FastAPI Docs](https://fastapi.tiangolo.com/)
-- [Selenium Docs](https://selenium.dev/)
+- [WordPress REST API](https://developer.wordpress.org/rest-api/)
 - [PostgreSQL Docs](https://www.postgresql.org/docs/)
 - [Uvicorn Docs](https://www.uvicorn.org/)
 

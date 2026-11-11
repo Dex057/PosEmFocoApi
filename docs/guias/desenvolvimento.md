@@ -97,7 +97,7 @@ PosEmFoco/
 │   ├── services/                     # Lógica de negócio
 │   │   ├── __init__.py
 │   │   ├── scraper.py                # Orquestrador + matching (casa_palavra)
-│   │   ├── scraping/                 # Motores (sigaa, estático, selenium) e fontes.py
+│   │   ├── scraping/                 # Motores (sigaa, estático, wordpress, plone) e fontes.py
 │   │   └── email_service.py          # SMTP/Email
 │   │
 │   └── utils/                        # Utilitários
@@ -240,7 +240,7 @@ from typing import List, Optional
 
 # 2. Third-party
 from fastapi import FastAPI
-from selenium import webdriver
+import requests
 import psycopg2
 
 # 3. Local

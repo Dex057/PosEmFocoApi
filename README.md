@@ -4,7 +4,7 @@ O **PósEmFoco** é um sistema automatizado desenvolvido em Python (trabalho de 
 
 O sistema permite que o usuário cadastre palavras-chave (ex: "Enfermagem", "Computação") e receba notificações por e-mail assim que um novo edital correspondente a algum interesse cadastrado for publicado por qualquer uma das universidades monitoradas.
 
-> **Status atual:** dez instituições monitoradas — todas as públicas do Pará (UFPA, UFRA, UFOPA, UNIFESSPA, IFPA, UEPA), mais UNIFAP (AP), UFAM (AM), UFT e IFTO (TO). As demais públicas do Norte ainda não têm fonte configurada, e o motivo de cada uma está anotado no fim de [`fontes.py`](app/services/scraping/fontes.py). Adicionar uma é cadastrar uma `FonteEdital`, não reescrever código — veja [Adicionando uma nova universidade](#adicionando-uma-nova-universidade).
+> **Status atual:** 16 instituições e 22 fontes monitoradas — todas as públicas do Pará (UFPA, UFRA, UFOPA, UNIFESSPA, IFPA, UEPA), mais UNIFAP e UEAP (AP), UFAM e UEA (AM), UFRR e UERR (RR), UFAC e IFAC (AC), UFT e IFTO (TO). As 6 públicas do Norte restantes (IFAM, UNIR, IFAP, IFRO, IFRR, UNITINS) ainda não têm fonte configurada, e o motivo de cada uma está anotado no fim de [`fontes.py`](app/services/scraping/fontes.py). Adicionar uma é cadastrar uma `FonteEdital`, não reescrever código — veja [Adicionando uma nova universidade](#adicionando-uma-nova-universidade).
 
 ## 📋 Sumário
 
@@ -24,7 +24,7 @@ O sistema permite que o usuário cadastre palavras-chave (ex: "Enfermagem", "Com
 
 ## 🎯 Visão Geral
 
-PósEmFoco é uma solução inteligente que automatiza o monitoramento de editais acadêmicos. Em vez de os usuários verificarem manualmente os portais de cada universidade, o sistema faz isso por eles usando web scraping (HTML estático, SIGAA e Selenium), verifica novos editais contra interesses registrados e envia notificações por e-mail em tempo real.
+PósEmFoco é uma solução inteligente que automatiza o monitoramento de editais acadêmicos. Em vez de os usuários verificarem manualmente os portais de cada universidade, o sistema faz isso por eles usando web scraping (SIGAA, HTML estático e a API REST de portais WordPress), verifica novos editais contra interesses registrados e envia notificações por e-mail em tempo real.
 
 ### Fluxo Principal
 
@@ -38,7 +38,7 @@ PósEmFoco é uma solução inteligente que automatiza o monitoramento de editai
 
 ### Por que API e worker são processos separados
 
-O scraper (principalmente o motor Selenium) é pesado e roda por vários segundos/minutos. Se ele rodasse dentro do mesmo processo da API:
+Uma rodada do scraper leva dezenas de segundos (22 fontes, cerca de 42 s) e depende de portais externos lentos ou instáveis. Se ele rodasse dentro do mesmo processo da API:
 - um travamento ou consumo alto de memória no scraping afetaria as respostas HTTP;
 - reiniciar a API (deploy, crash) interromperia um scraping em andamento.
 
@@ -49,7 +49,7 @@ Por isso o `worker.py` roda como um container/processo próprio (`docker-compose
 - **Cadastro e Autenticação:** Sistema de registro e login com senhas criptografadas usando bcrypt
 - **Gerenciamento de Interesses:** Usuários podem adicionar múltiplas palavras-chave para monitoramento
 - **Coleta Multi-Universidade:** Cada universidade é uma "fonte" configurável (URL + seletores), sem precisar duplicar código para adicionar uma nova
-- **Dois motores de coleta:** HTML estático (`requests` + `BeautifulSoup`, rápido, sem navegador) e Selenium (para páginas que dependem de JavaScript) — a fonte escolhe qual usar
+- **Quatro motores de coleta:** SIGAA, HTML estático (`requests` + `BeautifulSoup`), WordPress (API REST nativa `/wp-json`) e Plone (API REST `@search`, comum em portais gov.br) — os dois últimos leem JSON, sem seletor CSS. A fonte escolhe qual usar. Não há navegador headless: nenhuma fonte precisa
 - **Anti-Duplicidade:** Verifica no banco de dados se o edital já foi processado para evitar notificações duplicadas
 - **Notificação por E-mail:** Envia e-mails formatados em HTML com informações completas do edital
 - **Dados Persistentes:** Todos os editais, usuários e interesses são armazenados em PostgreSQL
@@ -62,7 +62,7 @@ Por isso o `worker.py` roda como um container/processo próprio (`docker-compose
 | **Framework Web** | FastAPI |
 | **Servidor** | Uvicorn |
 | **Scraping (HTML estático)** | requests & BeautifulSoup |
-| **Scraping (JS renderizado)** | Selenium & Webdriver Manager |
+| **Scraping (WordPress)** | API REST `/wp-json` via requests |
 | **Banco de Dados** | PostgreSQL |
 | **Autenticação** | bcrypt (passlib) |
 | **Comunicação** | SMTP (Gmail) |
@@ -73,14 +73,20 @@ Por isso o `worker.py` roda como um container/processo próprio (`docker-compose
 
 | Instituição | UF | Páginas monitoradas | Motor |
 |---|---|---|---|
-| UFPA | PA | SIGAA + `ufpa.br/?post_type=editais` | sigaa + selenium |
+| UFPA | PA | SIGAA + `ufpa.br/?post_type=editais` | sigaa + estático |
 | UFRA | PA | SIGAA + `novo.ufra.edu.br` (categoria Editais) | sigaa + estático |
-| UFOPA | PA | SIGAA | sigaa |
+| UFOPA | PA | SIGAA + `ufopa.edu.br` (categorias Processo Seletivo e Editais) | sigaa + wordpress |
 | UNIFESSPA | PA | SIGAA + `editais.unifesspa.edu.br` (pós-graduação) | sigaa + estático |
 | IFPA | PA | SIGAA (instável — o servidor deles responde 502 com frequência) | sigaa |
 | UEPA | PA | SGPS (sistema de seleções) + `uepa.br` | estático |
-| UNIFAP | AP | SIGAA | sigaa |
+| UNIFAP | AP | SIGAA + `unifap.br` (notícias com "edital") | sigaa + wordpress |
+| UEAP | AP | SIGAA | sigaa |
 | UFAM | AM | `ufam.edu.br/editais` | estático |
+| UEA | AM | `uea.edu.br` (notícias com "edital") | wordpress |
+| UFRR | RR | `ufrr.br` (notícias com "edital") | wordpress |
+| UERR | RR | `uerr.edu.br` (notícias com "edital") | wordpress |
+| UFAC | AC | `ufac.br` (busca por "edital") | plone |
+| IFAC | AC | `ifac.edu.br` (busca por "edital") | plone |
 | UFT | TO | `uft.edu.br/editais` | estático |
 | IFTO | TO | `ifto.edu.br/editais` | estático |
 
@@ -99,9 +105,9 @@ python -m app.services.scraping.fontes
 
 Se alguma linha vier com `0 itens`, o seletor daquela fonte quebrou.
 
-As públicas do Norte ainda de fora (IFAM, UFAC, UNIR, UFRR, UEA, UERR, UEAP, UNITINS, IFAP,
-IFAC, IFRO, IFRR) estão listadas no fim do `fontes.py`, cada uma com o motivo: anti-bot,
-lista renderizada por JavaScript ou links sem URL navegável.
+As públicas do Norte ainda de fora (IFAM, UNIR, IFAP, IFRO, IFRR, UNITINS) estão listadas no
+fim do `fontes.py`, cada uma com o motivo: anti-bot (IFAM), lista do SIGAA atrás de login (UNIR)
+ou portal sem API, que exige achar a página de editais e o seletor (IFAP, IFRO, IFRR, UNITINS).
 
 Cada instituição monitorada é uma `FonteEdital` em [`app/services/scraping/fontes.py`](app/services/scraping/fontes.py):
 
@@ -110,22 +116,24 @@ FonteEdital(
     nome="UFPA - Editais",
     universidade="UFPA",
     url="https://ufpa.br/?post_type=editais",
-    engine="selenium",                              # "estatico" ou "selenium"
-    seletor_item="h2.elementor-heading-title a",     # CSS do <a> com título + link
+    engine="estatico",                              # "estatico", "sigaa" ou "wordpress"
+    seletor_item='h2.elementor-heading-title a[href*="/editais/"]',  # CSS do <a> com título + link
     seletor_next="a.next, a.page-numbers.next",      # CSS do link "próxima página" (opcional)
     max_paginas=3,
 )
 ```
 
-O orquestrador (`app/services/scraper.py`) itera sobre `FONTES`, despacha para o motor certo (`engine_estatico.py`, `engine_sigaa.py` ou `engine_selenium.py`) e aplica a mesma lógica de deduplicação/notificação para todas as universidades — não há nada específico da UFPA fora do arquivo de configuração.
+O orquestrador (`app/services/scraper.py`) itera sobre `FONTES`, despacha para o motor certo (`engine_estatico.py`, `engine_sigaa.py`, ou `engine_wordpress.py`) e aplica a mesma lógica de deduplicação/notificação para todas as universidades — não há nada específico da UFPA fora do arquivo de configuração.
 
 ### Adicionando uma nova universidade
 
-1. Abra a página de editais da universidade e veja se a lista aparece no HTML puro (view-source) ou só depois de JavaScript rodar.
+1. Se o portal for WordPress, teste `https://<site>/wp-json/wp/v2/posts?search=edital`: respondendo JSON, use `engine="wordpress"` com esse endpoint e pule para o passo 4. Se for Plone (comum em .gov.br e IFs), teste `curl -H "Accept: application/json" "https://<site>/@search?SearchableText=edital"` e use `engine="plone"`.
+   Senão, veja se a lista aparece no HTML puro (`curl -A "Mozilla/5.0" <url>`; sem User-Agent alguns portais devolvem 403) ou só depois de JavaScript rodar. Se for por JavaScript, procure no DevTools (aba Rede) a chamada que traz os dados e use essa URL.
 2. Identifique o seletor CSS do link de cada item (e da paginação, se houver).
 3. Adicione uma nova `FonteEdital` em `fontes.py`:
-   - `engine="estatico"` se o HTML puro já contém a lista (mais rápido, sem navegador);
-   - `engine="selenium"` se o conteúdo só aparece após JavaScript.
+   - `engine="estatico"` com o seletor CSS do item;
+   - `engine="wordpress"` com o endpoint `/wp-json/wp/v2/posts?...` (sem seletor);
+   - `engine="plone"` com a busca `/@search?SearchableText=...&sort_on=effective&sort_order=reverse` (sem seletor).
 4. Rode `python -m app.services.scraping.fontes` para validar a coleta (mostra quantos itens cada fonte devolveu).
 
 Nenhuma outra parte do sistema precisa mudar — o scraper, o banco e o e-mail já são genéricos.
@@ -149,8 +157,11 @@ PosEmFoco/
 │   │   ├── scraper.py          # Orquestrador: busca interesses, roda as fontes, casa e notifica
 │   │   ├── scraping/           # Coleta multi-universidade
 │   │   │   ├── fontes.py           # Config de cada universidade (URL, seletores, motor)
-│   │   │   ├── engine_estatico.py  # Motor requests + BeautifulSoup (HTML estático)
-│   │   │   └── engine_selenium.py  # Motor Selenium (páginas com JS)
+│   │   │   ├── engine_estatico.py  # Motor requests + BeautifulSoup (HTML estático), CAs e IPv4
+│   │   │   ├── engine_sigaa.py     # Motor do módulo público do SIGAA
+│   │   │   ├── engine_wordpress.py # Motor da API REST do WordPress
+│   │   │   ├── engine_plone.py     # Motor da API REST do Plone (@search)
+│   │   │   └── intermediarios.pem  # Certificado intermediário da RNP que alguns portais não enviam
 │   │   ├── email_service.py    # Envio de notificações por e-mail
 │   │   └── __init__.py
 │   └── utils/
@@ -177,7 +188,6 @@ Antes de começar, certifique-se de ter instalado:
 
 - **Python 3.10 ou superior** - [Download](https://www.python.org/downloads/)
 - **PostgreSQL 12+** - [Download](https://www.postgresql.org/download/)
-- **Google Chrome** - Instalado no sistema operacional (necessário para Selenium)
 - **pip** - Gerenciador de pacotes Python (geralmente vem com Python)
 - **Git** - [Download](https://git-scm.com/downloads)
 
@@ -225,7 +235,6 @@ As dependências principais incluem:
 - **fastapi** - Framework web
 - **uvicorn** - Servidor ASGI
 - **requests + beautifulsoup4** - Scraping de páginas HTML estáticas (motor padrão para novas fontes)
-- **selenium + webdriver-manager** - Scraping de páginas que dependem de JavaScript
 - **psycopg2-binary** - Driver PostgreSQL
 - **python-dotenv** - Variáveis de ambiente
 - **passlib[bcrypt]** - Criptografia de senhas
@@ -515,9 +524,8 @@ A aplicação segue o padrão de **camadas** (Layered Architecture) para maior o
 ┌────────────────────▼────────────────────────────────┐
 │      Services Layer (app/services/)                 │
 │    ├─ scraper.py (orquestra fontes + matching)     │
-│    ├─ scraping/ (fontes.py + engine_estatico.py    │
-│    │            + engine_selenium.py, por           │
-│    │            universidade)                       │
+│    ├─ scraping/ (fontes.py + motores sigaa,        │
+│    │            estatico e wordpress)               │
 │    └─ email_service.py (envia notificações SMTP)   │
 └────────────────────┬────────────────────────────────┘
                      │
@@ -550,7 +558,7 @@ A aplicação segue o padrão de **camadas** (Layered Architecture) para maior o
 
 3. **Scraping (worker em loop ou disparo manual pelo painel):**
    - O orquestrador percorre todas as `FONTES` configuradas
-   - Cada fonte é coletada pelo motor indicado (estático ou Selenium)
+   - Cada fonte é coletada pelo motor indicado (sigaa, estático, wordpress ou plone)
    - Verifica duplicatas no banco
    - Salva novos editais
 
@@ -695,22 +703,12 @@ lsof -i :8000
 kill -9 <PID>
 ```
 
-### Erro: Selenium não encontra Chrome
+### Erro: `SSLError: certificate verify failed` numa fonte
 
-**Problema:** ChromeDriver não está disponível.
-
-**Solução:**
-```bash
-# Linux - Instalar Chrome
-sudo apt-get update
-sudo apt-get install google-chrome-stable
-
-# Verificar instalação
-google-chrome --version
-
-# Reinstalar dependências Python
-pip install --upgrade webdriver-manager selenium
-```
+**Problema:** o portal não envia o certificado intermediário. Os da RNP já estão em
+`app/services/scraping/intermediarios.pem`. Para outra CA, baixe o intermediário pela URL
+"CA Issuers" do certificado (`openssl s_client -connect host:443 | openssl x509 -noout -ext authorityInfoAccess`),
+confira com `openssl verify` e acrescente o PEM nesse arquivo.
 
 ### Erro: "CORS policy: No 'Access-Control-Allow-Origin'"
 
@@ -805,26 +803,24 @@ CREATE TABLE edital (
 
 ### Recomendações Adicionais
 
-1. Use HTTPS em produção
-2. Configure rate limiting para APIs
-3. Implemente autenticação com JWT (tokens)
+1. HTTPS já vem pelo Caddy; mantenha `ALLOWED_ORIGINS` com a URL real do front
+2. Configure rate limiting no `/login`
+3. Faça o token de sessão vencer (coluna `sessao.criado_em`)
 4. Adicione logs de auditoria
-5. Configure firewall adequadamente
 
 ## 📈 Próximas Melhorias
 
-- [ ] Autenticação com JWT tokens (mais seguro que sessões simples)
-- [ ] Dashboard de visualização de editais com filtros avançados
+- [x] Sessão por token guardada no Postgres (funciona com várias instâncias)
+- [x] Deploy com Docker Compose + Caddy (HTTPS)
+- [x] Dez instituições do Norte monitoradas (ver tabela no início)
+- [ ] Vencimento do token de sessão (hoje vale até o logout)
+- [ ] Cadastrar as demais públicas do Norte em `fontes.py` (UFAC, UNIR, UFRR, UEA, IFAM...; o motivo de cada uma está no fim do arquivo)
+- [ ] Expansão de siglas/sinônimos no casamento ("IA" → "Inteligência Artificial")
+- [ ] Testes automatizados com pytest (hoje há `test_api.py` e `app/services/test_match.py` como checagens com `assert`)
+- [ ] CI/CD
 - [ ] Histórico de notificações enviadas
-- [ ] API para buscar editais com filtros (data, área, etc)
-- [ ] Cadastrar as demais universidades públicas do Norte em `fontes.py` (UFAM, UFRR, UFAC, UFRO, UNIFAP, UFT, UNIFESSPA, UFOPA, UEPA, UEA...)
-- [ ] Aplicativo mobile (React Native ou Flutter)
+- [ ] Rate limiting no `/login`
 - [ ] Integração com WhatsApp/Telegram
-- [ ] Sistema de recomendações com Machine Learning
-- [ ] Testes automatizados (pytest, unittest)
-- [ ] Deploy com Docker e CI/CD
-- [ ] Monitoramento e logs centralizados
-- [ ] Rate limiting e throttling nas APIs
 
 ## 📄 Padrões de Código
 
